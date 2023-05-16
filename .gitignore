@@ -1,3 +1,6 @@
+# Electron Forge Output directory
+Electron Front-End/out
+
 # User-specific files
 *.suo
 *.user
