@@ -6,8 +6,9 @@
   "scripts": {
     "transpile": "./node_modules/.bin/tsc",
     "copy-files": "copyfiles -u 1 src/**/*.html src/**/*.css src/**/*.js build/",
+    "copy-js3party": "copyfiles -u 1 js3party/**/*.* build/js3party/",
     "offload": "copyfiles -u 1 build/**/*.* ../electron/build/assets/",
-    "build": "rimraf build/ && npm run transpile && npm run copy-files && rimraf ../electron/build/assets/ && npm run offload"
+    "build": "rimraf build/ && npm run transpile && npm run copy-files && npm run copy-js3party && rimraf ../electron/build/assets/ && npm run offload"
   },
   "repository": {
     "type": "git",
