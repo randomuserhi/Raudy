@@ -189,7 +189,8 @@ namespace Raudy.Net
                     IPEndPoint? ep = connection.LocalEndPoint as IPEndPoint;
                     if (ep != null)
                     {
-                        connections.AddOrUpdate(ep, new Connection(this, ep, connection, bufferSize), (key, old) => old);
+                        // NOTE(randomuserhi): on update, keep the old socket and dispose of this socket
+                        connections.AddOrUpdate(ep, new Connection(this, ep, connection, bufferSize), (key, old) => { connection.Dispose(); return old; });
                         onAccept?.Invoke(ep);
                     }
                     else connection.Dispose();
