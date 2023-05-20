@@ -2,10 +2,12 @@
   "name": "raudy",
   "version": "1.0.0",
   "description": "",
-  "main": "build/app.js",
+  "main": "build/app.cjs",
+  "type": "module",
   "scripts": {
-    "build": "./node_modules/.bin/tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "transpile": "./node_modules/.bin/tsc",
+    "copy-files": "copyfiles -u 1 assets/**/*.html assets/**/*.css assets/**/*.js build/assets/",
+    "build": "rimraf build/ && npm run transpile && npm run copy-files",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"
@@ -26,7 +28,9 @@
     "@electron-forge/maker-squirrel": "^6.1.1",
     "@electron-forge/maker-zip": "^6.1.1",
     "@types/electron": "^1.6.10",
+    "copyfiles": "^2.4.1",
     "electron": "24.3.0",
+    "rimraf": "^5.0.1",
     "typescript": "^5.0.4"
   }
 }
