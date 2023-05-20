@@ -1,5 +1,5 @@
-import { BrowserWindow, ipcMain } from 'electron';
-const path = require("path");
+import { BrowserWindow, ipcMain } from "electron";
+import * as path from "path";
 
 export default class Program 
 {
