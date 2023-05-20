@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "transpile": "./node_modules/.bin/tsc",
-    "copy-files": "copyfiles -u 1 assets/**/*.html assets/**/*.css assets/**/*.js build/assets/",
-    "build": "rimraf build/ && npm run transpile && npm run copy-files",
+    "build-assets": "npm run --prefix ../assets build",
+    "build": "rimraf build/ && npm run transpile && npm run build-assets",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"

@@ -1,17 +1,3 @@
-export {};
-
-declare global 
-{
-    interface Window
-    {
-        api: {
-            closeWindow: () => void;
-            maximizeWindow: () => void;
-            minimizeWindow: () => void;
-        }
-    }
-}
-
 document.getElementById("close-btn").addEventListener("click", (e) => {
     window.api.closeWindow();
 });

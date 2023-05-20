@@ -1,0 +1,23 @@
+{
+  "name": "raudy-assets",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "transpile": "./node_modules/.bin/tsc",
+    "copy-files": "copyfiles -u 1 src/**/*.html src/**/*.css src/**/*.js build/",
+    "offload": "copyfiles -u 1 build/**/*.* ../electron/build/assets/",
+    "build": "rimraf build/ && npm run transpile && npm run copy-files && rimraf ../electron/build/assets/ && npm run offload"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/randomuserhi/Raudy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "rimraf": "^5.0.1",
+    "typescript": "^5.0.4"
+  }
+}
