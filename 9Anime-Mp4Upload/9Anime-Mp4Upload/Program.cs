@@ -40,10 +40,12 @@ namespace Source
             client.onDisconnect += OnDisconnect;
 
             client.Open();
+            bool successful = false;
             Task connectTask = Task.Run(async () => {
                 try
                 {
                     await client.Connect(new IPEndPoint(address, port));
+                    successful = true;
                 }
                 catch (SocketException ex)
                 {
@@ -51,11 +53,14 @@ namespace Source
                 }
             });
 
+            // Wait for task to complete with timeout (ms)
             if (!connectTask.Wait(5000))
             {
                 Console.WriteLine("Connection to server timed out.");
                 return 1;
             }
+
+            if (!successful) return 1;
 
             // Running logic
             // TODO(randomuserhi) => Add tick rate and stuff
@@ -69,6 +74,7 @@ namespace Source
             return 0;
         }
 
+        // Manage connection
         static void OnConnect(IPEndPoint endPoint)
         {
             connected = true;
