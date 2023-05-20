@@ -9,7 +9,7 @@ namespace Raudy.Net
     {
         public delegate void ReceiveDelegate(IPEndPoint endPoint, int received, byte[] buffer);
         public delegate void ConnectDelegate(IPEndPoint endPoint);
-        public delegate void DisconnectDelegate();
+        public delegate void DisconnectDelegate(IPEndPoint endPoint);
 
         private Socket? socket;
         private byte[] buffer;
@@ -119,6 +119,8 @@ namespace Raudy.Net
         {
             if (socket == null) return;
 
+            IPEndPoint? ep = socket.RemoteEndPoint as IPEndPoint;
+
             socket.Dispose();
             if (task != null)
             {
@@ -130,7 +132,7 @@ namespace Raudy.Net
             }
             socket = null;
 
-            onDisconnect?.Invoke();
+            if (ep != null) onDisconnect?.Invoke(ep);
         }
     }
 }
