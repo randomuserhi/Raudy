@@ -33,51 +33,26 @@ namespace Source
                 return 1;
             }
 
-            // Attempt connecting to server
-            TCPClient client = new TCPClient(1024);
-            client.onReceive += OnReceive;
-            client.onConnect += OnConnect;
-            client.onDisconnect += OnDisconnect;
+            // Boot Server
+            TCPServer server = new TCPServer(1024);
+            server.onReceive += OnReceive;
+            server.onAccept += OnAccept;
+            server.onDisconnect += OnDisconnect;
 
-            client.Open();
-            bool successful = false;
-            Task connectTask = Task.Run(async () => {
-                try
-                {
-                    await client.Connect(new IPEndPoint(address, port));
-                    successful = true;
-                }
-                catch (SocketException ex)
-                {
-                    Console.WriteLine($"Failed to connect: {ex.SocketErrorCode} ({ex.ErrorCode})");
-                }
-            });
-
-            // Wait for task to complete with timeout (ms)
-            if (!connectTask.Wait(5000))
-            {
-                Console.WriteLine("Connection to server timed out.");
-                return 1;
-            }
-
-            if (!successful) return 1;
+            // TODO(randomuserhi): Maybe timeout if server doesn't connect and close server
+            //                     Have a timeout flag => if its 0, then dont auto-close
+            //                     otherwise close after timeout.
 
             // Running logic
-            // TODO(randomuserhi) => Add tick rate and stuff
 
-            while (connected)
-            {
-                // Send heartbeat message
-                //Task.Run(client.Send());
-            }
 
             return 0;
         }
 
         // Manage connection
-        static void OnConnect(IPEndPoint endPoint)
+        static void OnAccept(IPEndPoint endPoint)
         {
-            connected = true;
+            
         }
 
         static void OnReceive(IPEndPoint endPoint, int received, byte[] buffer)
@@ -87,7 +62,7 @@ namespace Source
 
         static void OnDisconnect(IPEndPoint endPoint)
         {
-            connected = false;
+            
         }
     }
 }

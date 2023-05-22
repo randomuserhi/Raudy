@@ -15,15 +15,19 @@
 	 - [electron CSP](https://www.electronjs.org/docs/latest/tutorial/security#csp-meta-tag)
 	   - Make sure to fully read about electron security (https://www.electronjs.org/docs/latest/tutorial/security)
 
-	 Additionally, the CSP below disables "eval" which will cause the following warning: 
-	 - (https://stackoverflow.com/questions/65445255/content-security-policy-of-your-site-blocks-the-use-of-eval-in-javascript-wa#:~:text=The%20Content%20Security%20Policy%20(CSP,..)%20for%20evaluating%20strings.)
-	 - This is a non-issue, just be aware of it
+	 'unsafe-eval' is needed for RHU to work, shouldn't be a security issue since we don't eval any js
+	 externally from a server / user input. 
 	-->
-	<meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+	<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-eval';">
 
 	<title>Electron template window</title>
 
-	<script type="module" src="../js3party/RHU/RHU.mjs"></script>
+	<script type="text/x-rhu-config">
+		RHU.config = {
+			modules: ["macro", "event", "weak"]
+		};
+	</script>
+	<script type="text/javascript" src="../js3party/RHU/RHU.js"></script>
 </head>
 
 <body>
@@ -57,9 +61,10 @@
 		</div>
 
 		<!-- app content goes here -->
+		<rhu-macro rhu-type="test"></rhu-macro>
 	</div>
 </body>
 
-<script type="module" src="control.mjs"></script> <!-- import control script for title bar buttons -->
+<script type="text/javascript" src="control.js"></script> <!-- import control script for title bar buttons -->
 
 </html>

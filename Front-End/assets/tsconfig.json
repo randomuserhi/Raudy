@@ -3,8 +3,6 @@
     "rootDir": "./src",
     "outDir": "build",
     "target": "ES2021",
-    "module": "Node16",
-    "moduleResolution": "Node16",
     "sourceMap": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
