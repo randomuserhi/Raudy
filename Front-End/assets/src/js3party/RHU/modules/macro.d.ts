@@ -25,7 +25,7 @@ declare global
 
             interface Constructor
             {
-                (): void;
+                (this: Element): void;
                 prototype: Element;
             }
 
