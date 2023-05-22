@@ -4,9 +4,9 @@ declare global
     {
         item: HTMLLIElement
     }
-    interface testConstructor extends RHU.Macro.Constructor
+    interface testConstructor extends RHU.Macro.Constructor<test>
     {
-        prototype: test
+        
     }
 
     namespace RHU { namespace Macro {

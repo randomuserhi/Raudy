@@ -16,9 +16,13 @@ RHU.module({ name: "test", hard: ["RHU.Macro"] }, function()
     {
         this.item.innerHTML = "Working!!!";
     } as testConstructor;
-    RHU.Macro(test, "test", /*html*/`
+    RHU.Macro(test, "test", //html
+        `
         <li rhu-id="item"></li>
-        `, { element: /*html*/`<ul></ul>`});
+        `, {
+            element: //html
+            `<ul></ul>`
+        });
 
     let other = document.createMacro("test");
     document.body.append(other);
