@@ -15,7 +15,7 @@ RHU.module({ name: "test", hard: ["RHU.Macro"] }, function()
     let test = function(this: test)
     {
         this.item.innerHTML = "Working!!!";
-    } as Function as testConstructor;
+    } as testConstructor;
     RHU.Macro(test, "test", /*html*/`
         <li rhu-id="item"></li>
         `, { element: /*html*/`<ul></ul>`});

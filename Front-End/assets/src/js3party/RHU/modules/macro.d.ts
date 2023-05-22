@@ -23,6 +23,12 @@ declare global
                 
             }
 
+            interface Constructor
+            {
+                (): void;
+                prototype: Element;
+            }
+
             interface Options
             {
 

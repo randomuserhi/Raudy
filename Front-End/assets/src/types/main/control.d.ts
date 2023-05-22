@@ -4,9 +4,8 @@ declare global
     {
         item: HTMLLIElement
     }
-    interface testConstructor extends Function
+    interface testConstructor extends RHU.Macro.Constructor
     {
-        new(): test,
         prototype: test
     }
 
