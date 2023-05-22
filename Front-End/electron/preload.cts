@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron"); // Import contextBridge, ipcRenderer from electron module
 
+// TODO(randomuserhi): Look into https://stackoverflow.com/a/57656281/9642458 for better security
+
 contextBridge.exposeInMainWorld(
     "api", {
         closeWindow: () => { // When window.api.closeWindow() is called, send "closeWindow" event to ipcMain

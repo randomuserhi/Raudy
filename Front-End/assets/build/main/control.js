@@ -8,18 +8,16 @@ document.getElementById("min-btn").addEventListener("click", (e) => {
     window.api.minimizeWindow();
 });
 RHU.module({ name: "test", hard: ["RHU.Macro"] }, function () {
-    /*let test = function(this: test)
-    {
+    let test = function () {
         this.item.innerHTML = "Working!!!";
-    } as testConstructor;
+    };
     RHU.Macro(test, "test", //html
-        `
+    `
         <li rhu-id="item"></li>
-        <div></div>
         `, {
-            element: //html
-            `<ul></ul>`
-        });*/
+        element: //html
+        `<ul></ul>`
+    });
     let other = document.createMacro("test");
     document.body.append(other);
 });

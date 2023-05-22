@@ -39,6 +39,7 @@ class Program {
         Program.win = new electron_1.BrowserWindow({
             frame: false,
             show: false,
+            backgroundColor: "rgba(0, 0, 0, 0)",
             webPreferences: {
                 nodeIntegration: false,
                 contextIsolation: true,
@@ -51,15 +52,25 @@ class Program {
         Program.win.show();
     }
     static setupIPC() {
-        electron_1.ipcMain.on("closeWindow", () => {
+        electron_1.ipcMain.on("closeWindow", (e) => {
+            if (!Program.validateSender(e.senderFrame))
+                return;
             Program.win.close();
         });
-        electron_1.ipcMain.on("maximizeWindow", () => {
+        electron_1.ipcMain.on("maximizeWindow", (e) => {
+            if (!Program.validateSender(e.senderFrame))
+                return;
             Program.win.isMaximized() ? Program.win.unmaximize() : Program.win.maximize();
         });
-        electron_1.ipcMain.on("minimizeWindow", () => {
+        electron_1.ipcMain.on("minimizeWindow", (e) => {
+            if (!Program.validateSender(e.senderFrame))
+                return;
             Program.win.minimize();
         });
+    }
+    static validateSender(frame) {
+        Program.win.webContents.executeJavaScript(`console.log("Electron: ${frame === Program.win.webContents.mainFrame}");`);
+        return true;
     }
     static main(app) {
         Program.app = app;

@@ -1,6 +1,9 @@
 import { BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 
+// TODO(randomuserhi): Look into https://www.electronjs.org/docs/latest/tutorial/security#csp-http-headers, instead of relying on
+//                     <meta> tags in loaded HTML
+
 export default class Program 
 {
     static win: Electron.BrowserWindow;
@@ -25,6 +28,7 @@ export default class Program
         Program.win = new BrowserWindow({
             frame: false, // remove the window frame
             show: false, // hide the window,
+            backgroundColor: "rgba(0, 0, 0, 0)", // always set a bg color to enable font antialiasing
             webPreferences: {
                 nodeIntegration: false, // is default value after Electron v5 - is disabled as per security (https://www.electronjs.org/docs/latest/tutorial/security)
                 contextIsolation: true, // protect against prototype pollution - (https://www.electronjs.org/docs/latest/tutorial/context-isolation)
@@ -40,15 +44,33 @@ export default class Program
 
     private static setupIPC()
     {
-        ipcMain.on("closeWindow", () => {
+        ipcMain.on("closeWindow", (e) => {
+            if (!Program.isTrustedFrame(e.senderFrame)) return;
+
             Program.win.close();
         });
-        ipcMain.on("maximizeWindow", () => {
+        ipcMain.on("maximizeWindow", (e) => {
+            if (!Program.isTrustedFrame(e.senderFrame)) return;
+
             Program.win.isMaximized() ? Program.win.unmaximize() : Program.win.maximize();
         });
-        ipcMain.on("minimizeWindow", () => {
+        ipcMain.on("minimizeWindow", (e) => {
+            if (!Program.isTrustedFrame(e.senderFrame)) return;
+
             Program.win.minimize();
         });
+    }
+
+    private static isTrustedFrame(frame: Electron.WebFrameMain)
+    {
+        // NOTE(randomuserhi): This simply checks if the frame making the call is the same
+        //                     as the loaded frame of the browser window.
+        //                     This is potentially an issue if the main browser window loads 
+        //                     an external unsafe URL since then this check doesn't work.
+        //
+        //                     For the use case of this application, the browser window should never
+        //                     load an external URL so this check is fine.
+        return frame === Program.win.webContents.mainFrame;
     }
 
     static main(app: Electron.App) 
