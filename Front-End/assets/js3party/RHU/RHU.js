@@ -87,7 +87,7 @@
     });
     if (result.hard.missing.length !== 0) {
         let msg = `RHU was unable to import due to missing dependencies.`;
-        if (core.exists(result.trace))
+        if (core.exists(result.trace) && core.exists(result.trace.stack))
             msg += `\n${result.trace.stack.split("\n").splice(1).join("\n")}\n`;
         for (let dependency of result.hard.missing) {
             msg += (`\n\tMissing '${dependency}'`);
@@ -127,7 +127,10 @@
         if (core.exists(document.currentScript)) {
             if (!core.exists(root.location)) {
                 let s = document.currentScript;
-                root.location = s.src.match(/(.*)[/\\]/)[1] || "";
+                let r = s.src.match(/(.*)[/\\]/);
+                root.location = "";
+                if (core.exists(r))
+                    root.location = r[1] || "";
                 root.script = s.innerHTML;
                 let params = (new URL(s.src)).searchParams;
                 for (let key of params.keys()) {
@@ -135,8 +138,8 @@
                 }
             }
         }
-        else
-            console.warn("Unable to find script element.");
+        if (!core.exists(root.location))
+            throw new Error("Unable to get root location.");
         core.loader = {
             timeout: 15 * 1000,
             head: document.head,
@@ -147,15 +150,15 @@
             }, root),
             JS: function (path, module, callback) {
                 let mod = {
-                    name: undefined,
+                    name: "",
                     type: MODULE
                 };
                 core.parseOptions(mod, module);
-                if (!core.exists(mod.name)) {
+                if (!core.exists(mod.name) || mod.name === "") {
                     console.error("Cannot load module without a name.");
                     return false;
                 }
-                if (!core.exists(mod.type)) {
+                if (!core.exists(mod.type) || mod.type === "") {
                     console.error("Cannot load module without a type.");
                     return false;
                 }
@@ -431,9 +434,12 @@
             },
             getElementById: function (id, clearID = true) {
                 let el = document.getElementById(id);
-                if (clearID)
+                if (RHU.exists(el) && clearID)
                     el.removeAttribute("id");
                 return el;
+            },
+            CustomEvent: function (type, detail) {
+                return new CustomEvent(type, { detail: detail });
             }
         };
         RHU.definePublicAccessor(RHU, "readyState", {
@@ -442,10 +448,17 @@
         RHU.definePublicAccessor(RHU, "config", {
             get: function () { return core.config; }
         });
-        let node = document.createTextNode(null);
+        let isEventListener = function (listener) {
+            return listener instanceof Function;
+        };
+        let node = document.createTextNode("");
         let addEventListener = node.addEventListener.bind(node);
         RHU.addEventListener = function (type, listener, options) {
-            addEventListener(type, (e) => { listener(e.detail); }, options);
+            let context = RHU;
+            if (isEventListener(listener))
+                addEventListener(type, (e) => { listener.call(context, e.detail); }, options);
+            else
+                addEventListener(type, (e) => { listener.handleEvent.call(context, e.detail); }, options);
         };
         RHU.removeEventListener = node.removeEventListener.bind(node);
         RHU.dispatchEvent = node.dispatchEvent.bind(node);
@@ -456,7 +469,8 @@
             watching: [],
             imported: [],
             run: function (module) {
-                module.callback(result);
+                if (core.exists(module.callback))
+                    module.callback(result);
                 this.imported.push(module);
             },
             execute: function (module) {
@@ -467,7 +481,7 @@
                 }
                 else {
                     let msg = `could not loaded as not all hard dependencies were found.`;
-                    if (core.exists(result.trace))
+                    if (core.exists(result.trace) && core.exists(result.trace.stack))
                         msg += `\n${result.trace.stack.split("\n").splice(1).join("\n")}\n`;
                     for (let dependency of result.hard.missing) {
                         msg += (`\n\tMissing '${dependency}'`);
@@ -489,7 +503,8 @@
                         let result = core.dependencies(module);
                         if ((!allowPartial && (result.hard.missing.length === 0 && result.soft.missing.length === 0))
                             || (allowPartial && result.hard.missing.length === 0)) {
-                            module.callback(result);
+                            if (core.exists(module.callback))
+                                module.callback(result);
                             this.imported.push(module);
                         }
                         else
@@ -522,7 +537,7 @@
                         window[core.loader.root.params.load]();
                     else
                         console.error(`Callback for 'load' event called '${core.loader.root.params.load}' does not exist.`);
-                RHU.dispatchEvent(new CustomEvent("load"));
+                RHU.dispatchEvent(RHU.CustomEvent("load", {}));
             }
         };
         let RHU = window.RHU;
@@ -536,8 +551,9 @@
                 obj.toString = function () {
                     let msg = "Imports in order of execution:";
                     for (let module of obj) {
-                        msg += `\n${core.exists(module.name) ? module.name : "Unknown"}${core.exists(module.trace) ? "\n"
-                            + module.trace.stack.split("\n")[1] : ""}`;
+                        msg += `\n${core.exists(module.name) ? module.name : "Unknown"}${core.exists(module.trace) && core.exists(module.trace.stack)
+                            ? "\n" + module.trace.stack.split("\n")[1]
+                            : ""}`;
                     }
                     return msg;
                 };

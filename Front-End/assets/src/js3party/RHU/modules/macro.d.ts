@@ -1,26 +1,41 @@
 declare global
 {
+    interface RHU
+    {
+
+        Macro?: RHU.Macro;
+    }
+
     namespace RHU
     {
-        var Macro: Macro
+        var Macro: RHU.Macro | undefined | null;
 
         interface Macro
         {
-
-            (constructor: Function, type: string, source: string, options: RHU.Macro.Options): void,
             
-            parseDomString(str: string): DocumentFragment,
+            (constructor: Function, type: string, source: string, options: RHU.Macro.Options): void;
             
-            parse(element: Element, type?: string, force?: boolean): void,
+            parseDomString(str: string): DocumentFragment;
+            
+            parse(element: Element, type?: string | undefined | null, force?: boolean): void;
 
-            observe(target: Node): void
+            observe(target: Node): void;
         }
 
         namespace Macro
         {
-            interface TemplateMap
+            interface Options
             {
+
+                element?: string;
+
+                floating?: boolean;
+
+                strict?: boolean;
+
+                encapsulate?: PropertyKey;
                 
+                content?: PropertyKey;
             }
 
             interface Constructor<T extends Element = Element>
@@ -29,18 +44,9 @@ declare global
                 prototype: T;
             }
 
-            interface Options
+            interface TemplateMap
             {
 
-                element?: string,
-
-                floating?: boolean,
-
-                strict?: boolean,
-
-                encapsulate?: PropertyKey,
-                
-                content?: PropertyKey
             }
         }
     }
@@ -48,15 +54,15 @@ declare global
     interface Document
     {
         
-        createMacro<T extends keyof RHU.Macro.TemplateMap>(type: T): RHU.Macro.TemplateMap[T],
+        createMacro<T extends keyof RHU.Macro.TemplateMap>(type: T): RHU.Macro.TemplateMap[T];
         
-        Macro(type: string, attributes: Record<string, string>): string
+        Macro(type: string, attributes: Record<string, string>): string;
     }
 
     interface Element
     {
 
-        rhuMacro: string
+        rhuMacro: string;
     }
 }
 

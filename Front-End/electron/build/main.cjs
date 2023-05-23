@@ -25,6 +25,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
+// TODO(randomuserhi): Look into https://www.electronjs.org/docs/latest/tutorial/security#csp-http-headers, instead of relying on
+//                     <meta> tags in loaded HTML
 class Program {
     static onWindowAllClosed() {
         if (process.platform !== "darwin") {
@@ -53,24 +55,30 @@ class Program {
     }
     static setupIPC() {
         electron_1.ipcMain.on("closeWindow", (e) => {
-            if (!Program.validateSender(e.senderFrame))
+            if (!Program.isTrustedFrame(e.senderFrame))
                 return;
             Program.win.close();
         });
         electron_1.ipcMain.on("maximizeWindow", (e) => {
-            if (!Program.validateSender(e.senderFrame))
+            if (!Program.isTrustedFrame(e.senderFrame))
                 return;
             Program.win.isMaximized() ? Program.win.unmaximize() : Program.win.maximize();
         });
         electron_1.ipcMain.on("minimizeWindow", (e) => {
-            if (!Program.validateSender(e.senderFrame))
+            if (!Program.isTrustedFrame(e.senderFrame))
                 return;
             Program.win.minimize();
         });
     }
-    static validateSender(frame) {
-        Program.win.webContents.executeJavaScript(`console.log("Electron: ${frame === Program.win.webContents.mainFrame}");`);
-        return true;
+    static isTrustedFrame(frame) {
+        // NOTE(randomuserhi): This simply checks if the frame making the call is the same
+        //                     as the loaded frame of the browser window.
+        //                     This is potentially an issue if the main browser window loads 
+        //                     an external unsafe URL since then this check doesn't work.
+        //
+        //                     For the use case of this application, the browser window should never
+        //                     load an external URL so this check is fine.
+        return frame === Program.win.webContents.mainFrame;
     }
     static main(app) {
         Program.app = app;

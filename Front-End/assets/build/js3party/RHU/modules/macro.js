@@ -28,8 +28,14 @@
         Element_getAttribute = Function.call.bind(Element.prototype.getAttribute);
         Element_hasAttribute = Function.call.bind(Element.prototype.hasAttribute);
         Element_removeAttribute = Function.call.bind(Element.prototype.removeAttribute);
-        Node_childNodes = Function.call.bind(Object.getOwnPropertyDescriptor(Node.prototype, "childNodes").get);
-        Node_parentNode = Function.call.bind(Object.getOwnPropertyDescriptor(Node.prototype, "parentNode").get);
+        let Descriptor_childNodes = Object.getOwnPropertyDescriptor(Node.prototype, "childNodes");
+        if (!RHU.exists(Descriptor_childNodes))
+            throw new ReferenceError("Node.prototype.childNodes is null or undefined.");
+        Node_childNodes = Function.call.bind(Descriptor_childNodes.get);
+        let Descriptor_parentNode = Object.getOwnPropertyDescriptor(Node.prototype, "parentNode");
+        if (!RHU.exists(Descriptor_parentNode))
+            throw new ReferenceError("Node.prototype.parentNode is null or undefined.");
+        Node_parentNode = Function.call.bind(Descriptor_parentNode.get);
         Document.prototype.createMacro = function (type) {
             let definition = templates.get(type);
             if (!RHU.exists(definition))
@@ -137,6 +143,8 @@
         let parseStack = [];
         let watching = new Map();
         Macro.parse = function (element, type, force = false) {
+            if (!RHU.exists(type))
+                type = "";
             if (element.tagName === "RHU-MACRO") {
                 let definition = templates.get(type);
                 if (!RHU.exists(definition))
@@ -157,8 +165,6 @@
                 throw new TypeError(`Element is not eligible to be used as a rhu-macro.`);
             if (!RHU.exists(element))
                 return;
-            if (type === "" || type === undefined)
-                type = null;
             if (force === false && element[symbols.constructed] === type)
                 return;
             if (parseStack.includes(type))

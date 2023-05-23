@@ -1,22 +1,22 @@
-document.getElementById("close-btn").addEventListener("click", (e) => {
+document.getElementById("close-btn")!.addEventListener("click", (e) => {
     window.api.closeWindow();
 });
 
-document.getElementById("max-btn").addEventListener("click", (e) => {
+document.getElementById("max-btn")!.addEventListener("click", (e) => {
     window.api.maximizeWindow();
 });
 
-document.getElementById("min-btn").addEventListener("click", (e) => {
+document.getElementById("min-btn")!.addEventListener("click", (e) => {
     window.api.minimizeWindow();
 });
 
-RHU.module({ name: "test", hard: ["RHU.Macro"] }, function()
+RHU.module({ name: "test", hard: ["RHU.Macro"], trace: new Error() }, function()
 {
     let test = function(this: test)
     {
         this.item.innerHTML = "Working!!!";
     } as testConstructor;
-    RHU.Macro(test, "test", //html
+    RHU.Macro!(test, "test", //html
         `
         <li rhu-id="item"></li>
         `, {
