@@ -1,6 +1,5 @@
 ﻿using System.Net;
-using System.Net.Sockets;
-using Raudy.Net;
+using System.Text.Json;
 
 // Project > Properties > Change from Console Application to Windows Application when moving to production
 
@@ -34,7 +33,7 @@ namespace Source
             }*/
 
             // Boot Server
-            TCPServer server = new TCPServer(1024);
+            /*TCPServer server = new TCPServer(1024);
             server.onReceive += OnReceive;
             server.onAccept += OnAccept;
             server.onDisconnect += OnDisconnect;
@@ -50,7 +49,24 @@ namespace Source
             // Running logic
             Console.ReadKey();
 
-            server.Dispose();
+            server.Dispose();*/
+
+            Task.Run(async void () => {
+                _9anime.VideoEmbed? resp = await _9anime.GetEmbed("HT6WCcIh");
+                if (resp is _9anime.VideoEmbed embed)
+                {
+                    if (embed.skip_data is Dictionary<string, int[]> skip_data)
+                    {
+                        Console.WriteLine(embed.url);
+                        foreach (string key in skip_data.Keys)
+                        {
+                            Console.WriteLine($"{key}: {skip_data[key][0]}");
+                        }
+                    }
+                }
+            });
+
+            Console.ReadLine();
 
             return 0;
         }
