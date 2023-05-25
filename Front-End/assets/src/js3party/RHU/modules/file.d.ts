@@ -1,40 +1,33 @@
-declare global
+interface RHU
 {
-    interface RHU
-    {
 
-        File?: RHU.File;
+    File?: RHU.File;
+}
+
+declare namespace RHU
+{
+    interface File
+    {
+        
+        Type: RHU.File.Type;
+
+        getType(blob: Blob): Promise<[string, string]>;
     }
 
-    namespace RHU
+    namespace File
     {
-        var File: RHU.File | undefined | null;
-
-        interface File
+        interface Type
         {
-            
-            Type: RHU.File.Type;
+            unknown: "unknown";
+            png: "png";
+            gif: "gif";
+            jpg: "jpg";
+            txt: "txt";
+            js: "text/javascript";
+            mp4: "video/mp4";
+            mkv: "video/x-matroska";
 
-            getType(blob: Blob)
-        }
-
-        namespace File
-        {
-            interface Type
-            {
-                unknown: "unknown";
-                png: "png";
-                gif: "gif";
-                jpg: "jpg";
-                txt: "txt";
-                js: "text/javascript";
-                mp4: "video/mp4";
-                mkv: "video/x-matroska";
-
-                toType(blobType: string): string;
-            }
+            toType(blobType: string): string;
         }
     }
 }
-
-export {}

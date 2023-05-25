@@ -1,6 +1,13 @@
 import { BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 
+//import * as net from "net";
+/*let client = new net.Socket();
+client.connect(65034, "127.0.0.1", function() {
+    Program.log("connected");
+    client.write("Crazy");
+});*/
+
 // TODO(randomuserhi): Look into https://www.electronjs.org/docs/latest/tutorial/security#csp-http-headers, instead of relying on
 //                     <meta> tags in loaded HTML
 
@@ -71,6 +78,12 @@ export default class Program
         //                     For the use case of this application, the browser window should never
         //                     load an external URL so this check is fine.
         return frame === Program.win.webContents.mainFrame;
+    }
+
+    // TODO(randomuserhi): Remove this, purely for debugging => or atleast make a proper API for it
+    static log(message: string)
+    {
+        Program.win.webContents.executeJavaScript(`console.log("${message}");`);
     }
 
     static main(app: Electron.App) 

@@ -12,7 +12,7 @@ namespace Source
 
         static int Main(string[] args)
         {
-            if (args.Length < 2)
+            /*if (args.Length < 2)
             {
                 Console.WriteLine("No IP or Port was given.");
                 return 1;
@@ -31,7 +31,7 @@ namespace Source
             {
                 Console.WriteLine($"Failed to parse Port from '{args[1]}'");
                 return 1;
-            }
+            }*/
 
             // Boot Server
             TCPServer server = new TCPServer(1024);
@@ -43,8 +43,14 @@ namespace Source
             //                     Have a timeout flag => if its 0, then dont auto-close
             //                     otherwise close after timeout.
 
-            // Running logic
+            server.Open();
+            //server.Bind(new IPEndPoint(address, port));
+            server.Bind(new IPEndPoint(IPAddress.Any, 65034));
 
+            // Running logic
+            Console.ReadKey();
+
+            server.Dispose();
 
             return 0;
         }
@@ -52,12 +58,12 @@ namespace Source
         // Manage connection
         static void OnAccept(IPEndPoint endPoint)
         {
-            
+            Console.WriteLine("Accepted");
         }
 
         static void OnReceive(IPEndPoint endPoint, int received, byte[] buffer)
         {
-
+            Console.WriteLine("Received something");
         }
 
         static void OnDisconnect(IPEndPoint endPoint)

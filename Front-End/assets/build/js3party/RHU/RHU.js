@@ -1,8 +1,4 @@
 (function () {
-    const LOADING = "loading";
-    const COMPLETE = "complete";
-    const MODULE = "module";
-    const EXTENSION = "x-module";
     let core;
     (function () {
         core = {
@@ -35,7 +31,7 @@
                         set[path] = true;
                         let traversal = path.split(".");
                         let obj = window;
-                        for (; traversal.length !== 0 && core.exists(obj); obj = obj[traversal.shift()]) {
+                        for (; traversal.length !== 0 && core.exists(obj); obj = obj[(traversal.shift())]) {
                         }
                         if (core.exists(obj))
                             has.push(path);
@@ -71,7 +67,7 @@
                     return /^([a-z]+:)?[\\/]/i.test(path);
                 }
             },
-            readyState: LOADING
+            readyState: "loading"
         };
     })();
     let result = core.dependencies({
@@ -151,7 +147,7 @@
             JS: function (path, module, callback) {
                 let mod = {
                     name: "",
-                    type: MODULE
+                    type: "module"
                 };
                 core.parseOptions(mod, module);
                 if (!core.exists(mod.name) || mod.name === "") {
@@ -194,16 +190,10 @@
             console.warn("Overwriting global RHU...");
         let RHU = window.RHU = {
             version: "1.0.0",
-            Module: {
-                Type: {
-                    Module: MODULE,
-                    Extension: EXTENSION
-                }
-            },
-            ReadyState: {
-                Loading: LOADING,
-                Complete: COMPLETE
-            },
+            MODULE: "module",
+            EXTENSION: "x-module",
+            LOADING: "loading",
+            COMPLETE: "complete",
             isMobile: function () {
                 if (RHU.exists(navigator.userAgentData) && RHU.exists(navigator.userAgentData.mobile))
                     return navigator.userAgentData.mobile;
@@ -456,9 +446,9 @@
         RHU.addEventListener = function (type, listener, options) {
             let context = RHU;
             if (isEventListener(listener))
-                addEventListener(type, (e) => { listener.call(context, e.detail); }, options);
+                addEventListener(type, ((e) => { listener.call(context, e.detail); }), options);
             else
-                addEventListener(type, (e) => { listener.handleEvent.call(context, e.detail); }, options);
+                addEventListener(type, ((e) => { listener.handleEvent.call(context, e.detail); }), options);
         };
         RHU.removeEventListener = node.removeEventListener.bind(node);
         RHU.dispatchEvent = node.dispatchEvent.bind(node);
@@ -513,7 +503,7 @@
                 } while (oldLen !== this.watching.length);
             },
             load: function (module) {
-                if (core.readyState !== COMPLETE) {
+                if (core.readyState !== RHU.COMPLETE) {
                     this.watching.push(module);
                 }
                 else
@@ -527,7 +517,7 @@
                     this.onComplete();
             },
             onComplete: function () {
-                core.readyState = COMPLETE;
+                core.readyState = RHU.COMPLETE;
                 this.reconcile();
                 this.reconcile(true);
                 for (let module of this.watching)
@@ -541,8 +531,15 @@
             }
         };
         let RHU = window.RHU;
-        RHU.module = function (module, callback) {
-            module.callback = callback;
+        RHU.require = function (root, module) {
+            if (core.dependencies(module).hard.missing.length === 0)
+                return root;
+            throw new ReferenceError("Not all hard dependencies were available.");
+        };
+        RHU.module = function (module) {
+            return module;
+        };
+        RHU.import = function (module) {
             core.moduleLoader.load(module);
         };
         RHU.definePublicAccessor(RHU, "imports", {
@@ -564,14 +561,14 @@
             core.moduleLoader.importList.add({
                 path: core.loader.root.path(core.path.join("modules", `${module}.js`)),
                 name: module,
-                type: RHU.Module.Type.Module
+                type: RHU.MODULE
             });
         }
         for (let module of core.config.extensions) {
             core.moduleLoader.importList.add({
                 path: core.loader.root.path(core.path.join("modules", `${module}.js`)),
                 name: module,
-                type: RHU.Module.Type.Extension
+                type: RHU.EXTENSION
             });
         }
         for (let includePath in core.config.includes) {
@@ -589,7 +586,7 @@
                 core.moduleLoader.importList.add({
                     path: path,
                     name: module,
-                    type: RHU.Module.Type.Module
+                    type: RHU.MODULE
                 });
             }
         }

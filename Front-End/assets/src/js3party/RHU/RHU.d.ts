@@ -1,221 +1,245 @@
 // TODO(randomuserhi): documentation
-// Types used for distribution
+// Types used for library code
 
-declare global
+interface Constructor
 {
-    interface Constructor
-    {
-        new(...args: any[]): any;
-        prototype: any;
-    }
-    type Prototype<T extends Constructor> = T extends { new(...args: any[]): any; prototype: infer Proto; } ? Proto : never;
+    new(...args: any[]): any;
+    prototype: any;
+}
+type Prototype<T extends Constructor> = T extends { new(...args: any[]): any; prototype: infer Proto; } ? Proto : never;
 
-    interface RHU
-    {
-        readonly version: string;
-        
-        readonly readyState: ReadyState;
-        readonly config: RHU.Config;
+interface RHU extends EventTarget
+{
+    readonly version: string;
 
-        readonly imports: RHU.Module[];
+    readonly LOADING: RHU.LOADING;
+    readonly COMPLETE: RHU.COMPLETE;
 
-        addEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
+    readonly MODULE: RHU.MODULE;
+    readonly EXTENSION: RHU.EXTENSION;
 
-        addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
+    readonly readyState: RHU.ReadyState;
+    readonly config: RHU.Config;
 
-        removeEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | EventListenerOptions): void;
+    isMobile(): boolean;
 
-        removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    exists<T>(object: T | null | undefined): object is T;
 
-        CustomEvent<T = any>(type: string, detail: T): CustomEvent<T>;
+    parseOptions<T extends {}>(template: T, options: any | null | undefined): T;
 
-        isMobile(): boolean;
+    properties(object: any, options: RHU.Properties.Options, operation?: (object: any, property: PropertyKey) => void): Set<PropertyKey>;
 
-        exists<T>(object: T | null | undefined): object is T;
+    defineProperty(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
 
-        parseOptions<T extends {}>(template: T, options: any | null | undefined): T;
+    definePublicProperty(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
+    
+    definePublicAccessor(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
 
-        properties(object: any, options: RHU.Properties.Options, operation?: (object: any, property: PropertyKey) => void): Set<PropertyKey>;
+    defineProperties(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
+    
+    definePublicProperties(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
 
-        defineProperty(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
+    definePublicAccessors(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
 
-        definePublicProperty(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
-        
-        definePublicAccessor(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
+    assign<T>(target: T, source: any, options?: RHU.Properties.Flags): T;
+    
+    deleteProperties(object: any, preserve?: {}): void;
 
-        defineProperties(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
-        
-        definePublicProperties(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
+    clone<T extends object>(object: object, prototype: T) : T;
+    clone<T extends object>(object: T) : T;
 
-        definePublicAccessors(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
+    isConstructor(object: any): boolean;
 
-        assign<T>(target: T, source: any, options?: RHU.Properties.Flags): T;
-        
-        deleteProperties(object: any, preserve?: {}): void;
+    inherit(child: Function, base: Function): void;
 
-        clone<T extends object>(object: object, prototype: T) : T;
-        clone<T extends object>(object: T) : T;
+    reflectConstruct<T extends Constructor, K extends T>(base: T, name: string, constructor: (...args: any[]) => void, argnames?: string[]): RHU.ReflectConstruct<T, Prototype<K>>;
 
-        isConstructor(object: any): boolean;
+    clearAttributes(element: HTMLElement): void;
 
-        inherit(child: Function, base: Function): void;
+    getElementById(id: string, clearID: boolean): HTMLElement | null;
 
-        reflectConstruct<T extends Constructor, K extends T>(base: T, name: string, constructor: (...args: any[]) => void, argnames?: string[]): RHU.ReflectConstruct<T, Prototype<K>>;
+    require<T extends object, Module extends { hard: string[] }>(root: T, module: Module): RHU.Module.CastExists<T, Module>;
 
-        clearAttributes(element: HTMLElement): void;
+    module<Module extends { hard: Path[], callback: (result?: RHU.ResolvedDependencies) => any, trace: Error }, Path extends string>(module: Module): Module;
 
-        getElementById(id: string, clearID: boolean): HTMLElement | null;
+    import(module: RHU.Module): void;
 
-        module(dependencies: RHU.Module, callback: (result?: RHU.ResolvedDependencies) => void): void;
-    }
+    readonly imports: RHU.Module[];
 
-    namespace RHU
-    {
-        interface Config
-        {
+    addEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
 
-            readonly root?: string;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
 
-            readonly extensions: string[];
+    removeEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | EventListenerOptions): void;
 
-            readonly modules: string[];
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
 
-            readonly includes: Record<string, string>;
-        }
-
-        interface EventMap
-        {
-            "load": LoadEvent;
-        }
-
-        interface LoadEvent
-        {
-            
-        }
-
-        namespace Properties
-        {
-            interface Options
-            {
-                enumerable?: boolean;
-                configurable?: boolean;
-                symbols?: boolean;
-                hasOwn?: boolean;
-                writable?: boolean;
-                get?: boolean;
-                set?: boolean;
-            }
-
-            interface Flags
-            {
-                replace?: boolean;
-                warn?: boolean;
-                err?: boolean;
-            }
-        }
-
-        interface ReflectConstruct<Base extends Constructor, T> extends Constructor
-        {
-            __reflect__(newTarget: any, args: any[]): T | undefined;
-            __constructor__(...args: any[]): void;
-            __args__(...args: any[]): ConstructorParameters<Base>;
-        }
-
-        interface Dependencies
-        {
-            hard?: string[];
-            soft?: string[];
-            trace?: Error;
-        }
-
-        interface ResolvedDependency
-        {
-            has: string[];
-            missing: string[];
-        }
-
-        interface ResolvedDependencies
-        {
-            hard: ResolvedDependency;
-            soft: ResolvedDependency;
-            trace?: Error;
-        }
-
-        interface Module extends RHU.Dependencies
-        {
-            name?: string;
-            type?: string;
-            trace: Error;
-            callback?: (result: RHU.ResolvedDependencies) => void;
-        }
-
-        enum ReadyState 
-        {
-            Loading = "loading",
-            Complete = "complete"
-        }
-
-        const version: string;
-        
-        const readyState: ReadyState;
-        const config: RHU.Config;
-
-        const imports: RHU.Module[];
-
-        function addEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
-
-        function addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-
-        function removeEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | EventListenerOptions): void;
-
-        function removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
-
-        function CustomEvent<T = any>(type: string, detail: T): CustomEvent<T>;
-
-        function isMobile(): boolean;
-
-        function exists<T>(object: T | null | undefined): object is T;
-
-        function parseOptions<T extends {}>(template: T, options: any | null | undefined): T;
-
-        function properties(object: any, options: RHU.Properties.Options, operation?: (object: any, property: PropertyKey) => void): Set<PropertyKey>;
-
-        function defineProperty(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
-
-        function definePublicProperty(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
-        
-        function definePublicAccessor(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: RHU.Properties.Flags): boolean;
-
-        function defineProperties(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
-        
-        function definePublicProperties(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
-
-        function definePublicAccessors(object: any, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: RHU.Properties.Flags): void;
-
-        function assign<T>(target: T, source: any, options?: RHU.Properties.Flags): T;
-        
-        function deleteProperties(object: any, preserve?: {}): void;
-
-        function clone<T extends object>(object: object, prototype: T) : T;
-        function clone<T extends object>(object: T) : T;
-
-        function isConstructor(object: any): boolean;
-
-        function inherit(child: Function, base: Function): void;
-
-        function reflectConstruct<T extends Constructor, K extends T>(base: T, name: string, constructor: (...args: any[]) => void, argnames?: string[]): RHU.ReflectConstruct<T, Prototype<K>>;
-
-        function clearAttributes(element: HTMLElement): void;
-
-        function getElementById(id: string, clearID: boolean): HTMLElement | null;
-
-        function module(dependencies: RHU.Module, callback: (result?: RHU.ResolvedDependencies) => void): void;
-    }
-
-    interface Window
-    {
-        RHU: RHU;
-    }
+    CustomEvent<T = any>(type: string, detail: T): CustomEvent<T>;
 }
 
-export {}
+declare var RHU: RHU;
+interface Window
+{
+    RHU: RHU
+}
+
+declare namespace RHU
+{
+    // Utilities used for type inference
+
+    // Converts a single string path, `"object.property"` into the type `{ object: { property: {} } }`
+    type PathToType<Key extends string, Value> =
+        Key extends `${infer Parent}.${infer Child}` ? { [P in Parent]: PathToType<Child, Value> } 
+                                                     : { [P in Key]: Value };
+
+    // Converts multiple string paths, `"object.a" | "object.b"` into the type `{ object: { a: {} } & { b: {} } }` 
+    //     => which is same as `{ object: { a: {}, b: {} } }`
+    type PathsToType<Keys extends string, Value> = 
+        { [Property in Keys]: (x: PathToType<Property, Value>) => void } extends { [k: string]: (x: infer Record) => void } ?
+        { [Property in keyof Record]: Record[Property] } : never;
+
+    // Gets the type of the value of a property inside T
+    type ValueOf<T extends object, Key extends string & keyof T> = 
+        T extends { [Property in Key]: infer Value } ? Value : never;
+    
+    // Gets the type of the array
+    type ArrayOf<Array extends any[]> = 
+        Array extends (infer T)[] ? T : never;
+    
+    // Traverses down a path by key
+    //     => TraversePath<"object", "object.property" | "other.example" | "object.other.a"> => "property" | "other.a"   
+    type TraversePath<Key extends string, Path> = 
+        Path extends `${Key}.${infer Child}` ? `${Child}` : never;
+
+    // Casts a type T into a type where the provided paths exist (not null | undefined)
+    //     => CastExists<{ a: number | undefined, b: number | undefined, c: number | undefined }, "a" | "b">
+    //         => { a: number, b: number, c: number | undefined }
+    //         => NOTE(randomuserhi): The above type is what it basically bois down to, but the actual type
+    //                                is represented differently. Refer to: 
+    //            https://stackoverflow.com/questions/76311435/typescript-infer-values-that-are-not-null-from-string-identifier
+    type CastExists<T extends object, Paths extends string> =
+        { [Property in string & keyof T]: ValueOf<T, Property> & PathsToType<TraversePath<Property, Paths>, {}> };
+
+    // Casts a type T into a type where the provided paths exist (not null | undefined)
+    // and then select a subset of properties
+    //     => CastExistsSubSet<{ a: number | undefined, b: number | undefined, c: number | undefined }, "a", "a" | "b">
+    //         => { a: number }
+    //             => "a" | "b" exist, but "a" was the only selected key to expose
+    //         => NOTE(randomuserhi): The above type is what it basically bois down to, but the actual type
+    //                                is represented differently. Refer to: 
+    //            https://stackoverflow.com/questions/76311435/typescript-infer-values-that-are-not-null-from-string-identifier
+    /**
+     * @deprecated The method should not be used
+     */
+    type CastExistsSubSet<T extends object, Keys extends string & keyof T, Paths extends string> = 
+        { [Property in Keys & keyof T]: ValueOf<T, Property> & PathsToType<TraversePath<Property, Paths>, {}> };
+
+    // NOTE(randomuserhi): Type definitions to get around https://github.com/microsoft/TypeScript/issues/28357
+    interface EventListener {
+        (evt: Event): void;
+        (evt: CustomEvent): void;
+    }
+    interface EventListenerObject {
+        handleEvent(object: Event): void;
+        handleEvent(object: CustomEvent): void;
+    }
+    type EventListenerOrEventListenerObject = EventListener | EventListenerObject;
+
+    type MODULE = "module";
+    type EXTENSION = "x-module";
+    type ModuleType = RHU.MODULE | RHU.EXTENSION;
+
+    type LOADING = "loading";
+    type COMPLETE = "complete";
+    type ReadyState = RHU.LOADING | RHU.COMPLETE;
+
+    interface Config
+    {
+
+        readonly root?: string;
+
+        readonly extensions: string[];
+
+        readonly modules: string[];
+
+        readonly includes: Record<string, string>;
+    }
+
+    interface EventMap
+    {
+        "load": LoadEvent;
+    }
+
+    interface LoadEvent
+    {
+        
+    }
+
+    namespace Properties
+    {
+        interface Options
+        {
+            enumerable?: boolean;
+            configurable?: boolean;
+            symbols?: boolean;
+            hasOwn?: boolean;
+            writable?: boolean;
+            get?: boolean;
+            set?: boolean;
+        }
+
+        interface Flags
+        {
+            replace?: boolean;
+            warn?: boolean;
+            err?: boolean;
+        }
+    }
+
+    interface ReflectConstruct<Base extends Constructor, T> extends Constructor
+    {
+        __reflect__(newTarget: any, args: any[]): T | undefined;
+        __constructor__(...args: any[]): void;
+        __args__(...args: any[]): ConstructorParameters<Base>;
+    }
+
+    interface Dependencies
+    {
+        hard?: string[];
+        soft?: string[];
+        trace?: Error;
+    }
+
+    interface ResolvedDependency
+    {
+        has: string[];
+        missing: string[];
+    }
+
+    interface ResolvedDependencies
+    {
+        hard: ResolvedDependency;
+        soft: ResolvedDependency;
+        trace?: Error;
+    }
+
+    interface Module extends RHU.Dependencies
+    {
+        name?: string;
+        type?: RHU.ModuleType;
+        trace: Error;
+        callback?: (result: RHU.ResolvedDependencies) => any;
+    }
+
+    namespace Module
+    {
+        // Casts a type T into a type where the provided dependency strings exist (not null | undefined)
+        //     => CastExists<{ a: number | undefined, b: number | undefined, c: number | undefined }, { hard: ("a" | "b")[] }>
+        //         => { a: number, b: number, c: number | undefined }
+        //         => NOTE(randomuserhi): The above type is what it basically bois down to, but the actual type
+        //                                is represented differently. Refer to: 
+        //            https://stackoverflow.com/questions/76311435/typescript-infer-values-that-are-not-null-from-string-identifier
+        type CastExists<T extends object, Module extends { hard: string[] }> =
+            { [Property in string & keyof T]: ValueOf<T, Property> & PathsToType<TraversePath<Property, ArrayOf<ValueOf<Module, "hard">>>, {}> };
+    }
+}

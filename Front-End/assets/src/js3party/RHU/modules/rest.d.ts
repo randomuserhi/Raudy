@@ -1,44 +1,37 @@
-declare global
+interface RHU
 {
-    interface RHU
-    {
 
-        Rest?: RHU.Rest;
+    Rest?: RHU.Rest;
+}
+
+declare namespace RHU
+{
+    interface Rest
+    {
+        fetch<T>(options: RHU.Rest.Options<T, RHU.Rest.ParserFunc>): RHU.Rest.FetchFunc<T, RHU.Rest.ParserFunc>;
+        fetch<T, P extends (...params: any[]) => RHU.Rest.Payload>(options: RHU.Rest.Options<T, P>): RHU.Rest.FetchFunc<T, P>;
+        
+        fetchJSON<T>(options: RHU.Rest.Options<T, RHU.Rest.ParserFunc>): RHU.Rest.FetchFunc<T, RHU.Rest.ParserFunc>;
+        fetchJSON<T, P extends (...params: any[]) => RHU.Rest.Payload>(options: RHU.Rest.Options<T, P>): RHU.Rest.FetchFunc<T, P>;
     }
 
-    namespace RHU
+    namespace Rest
     {
-        var Rest: RHU.Rest | undefined | null;
+        type ParserFunc = (payload: RHU.Rest.Payload) => RHU.Rest.Payload;
+        type FetchFunc<T, P extends (...params: any[]) => RHU.Rest.Payload> = (...params: Parameters<P>) => Promise<T>;
 
-        interface Rest
+        interface Options<T, P extends (...params: any[]) => RHU.Rest.Payload>
         {
-            fetch<T>(options: RHU.Rest.Options<T, RHU.Rest.ParserFunc>): RHU.Rest.FetchFunc<T, RHU.Rest.ParserFunc>;
-            fetch<T, P extends (...params: any[]) => RHU.Rest.Payload>(options: RHU.Rest.Options<T, P>): RHU.Rest.FetchFunc<T, P>;
-            
-            fetchJSON<T>(options: RHU.Rest.Options<T, RHU.Rest.ParserFunc>): RHU.Rest.FetchFunc<T, RHU.Rest.ParserFunc>;
-            fetchJSON<T, P extends (...params: any[]) => RHU.Rest.Payload>(options: RHU.Rest.Options<T, P>): RHU.Rest.FetchFunc<T, P>;
+            url: URL | string;
+            fetch: RequestInit;
+            callback: (result: Response) => Promise<T>;
+            parser?: P;
         }
 
-        namespace Rest
+        interface Payload
         {
-            type ParserFunc = (payload: RHU.Rest.Payload) => RHU.Rest.Payload;
-            type FetchFunc<T, P extends (...params: any[]) => RHU.Rest.Payload> = (...params: Parameters<P>) => Promise<T>;
-
-            interface Options<T, P extends (...params: any[]) => RHU.Rest.Payload>
-            {
-                url: URL | string;
-                fetch: RequestInit;
-                callback: (result: Response) => Promise<T>;
-                parser?: P;
-            }
-
-            interface Payload
-            {
-                urlParams?: Record<string, string>;
-                body?: BodyInit | null;
-            }
+            urlParams?: Record<string, string>;
+            body?: BodyInit | null;
         }
     }
 }
-
-export {}

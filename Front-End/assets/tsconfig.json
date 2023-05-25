@@ -3,14 +3,13 @@
     "rootDir": "./src",
     "outDir": "build",
     "target": "ES2021",
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "forceConsistentCasingInFileNames": true,
+    "removeComments": true,
     "sourceMap": false,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "removeComments": false
   },
-  "exclude": [ "node_modules" ] 
+  "exclude": [ "node_modules", "build" ] 
 }

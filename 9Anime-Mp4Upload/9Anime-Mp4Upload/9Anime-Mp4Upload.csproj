@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="CefSharp.OffScreen.NETCore" Version="113.1.40" />
+    <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
   </ItemGroup>
 
 </Project>
