@@ -13,24 +13,23 @@ client.connect(65034, "127.0.0.1", function() {
 
 export default class Program 
 {
-    static win: Electron.BrowserWindow;
+    static win: Electron.BrowserWindow | null;
     static app: Electron.App;
-    static BrowserWindow;
 
-    private static onWindowAllClosed() 
+    private static onWindowAllClosed(): void
     {
         if (process.platform !== "darwin") {
             Program.app.quit();
         }
     }
 
-    private static onClose() 
+    private static onClose(): void
     {
         // Dereference the window object. 
         Program.win = null;
     }
 
-    private static onReady() 
+    private static onReady(): void
     {
         Program.win = new BrowserWindow({
             frame: false, // remove the window frame
@@ -49,27 +48,31 @@ export default class Program
         Program.win.show();
     }
 
-    private static setupIPC()
+    private static setupIPC(): void
     {
         ipcMain.on("closeWindow", (e) => {
             if (!Program.isTrustedFrame(e.senderFrame)) return;
-
+            if (Program.win === null) return;
+            
             Program.win.close();
         });
         ipcMain.on("maximizeWindow", (e) => {
             if (!Program.isTrustedFrame(e.senderFrame)) return;
+            if (Program.win === null) return;
 
             Program.win.isMaximized() ? Program.win.unmaximize() : Program.win.maximize();
         });
         ipcMain.on("minimizeWindow", (e) => {
             if (!Program.isTrustedFrame(e.senderFrame)) return;
+            if (Program.win === null) return;
 
             Program.win.minimize();
         });
     }
 
-    private static isTrustedFrame(frame: Electron.WebFrameMain)
+    private static isTrustedFrame(frame: Electron.WebFrameMain): boolean
     {
+        if (Program.win === null) return false;
         // NOTE(randomuserhi): This simply checks if the frame making the call is the same
         //                     as the loaded frame of the browser window.
         //                     This is potentially an issue if the main browser window loads 
@@ -81,12 +84,13 @@ export default class Program
     }
 
     // TODO(randomuserhi): Remove this, purely for debugging => or atleast make a proper API for it
-    static log(message: string)
+    static log(message: string): void
     {
+        if (Program.win === null) return;
         Program.win.webContents.executeJavaScript(`console.log("${message}");`);
     }
 
-    static main(app: Electron.App) 
+    static main(app: Electron.App): void 
     {
         Program.app = app;
         Program.app.on('window-all-closed', Program.onWindowAllClosed);

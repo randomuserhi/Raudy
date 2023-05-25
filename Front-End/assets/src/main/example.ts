@@ -11,7 +11,7 @@ declare namespace RHU { namespace Macro {
     interface TemplateMap
     {
         "test": test
-    }      
+    }
 }}
 
 RHU.import(RHU.module({ trace: new Error(),
