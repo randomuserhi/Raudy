@@ -2,7 +2,7 @@
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Raudy.Url;
-using System.Text.Json;
+using Newtonsoft.Json;
 
 // TODO(randomuserhi): Better exception handling => need to write to a log file etc...
 // TODO(randomuserhi): A method to get information from 9anime filter => e.g latest, newest etc...
@@ -67,7 +67,7 @@ public partial class _9anime : IDisposable
                     using (HttpContent content = res.Content)
                     {
                         string data = await content.ReadAsStringAsync();
-                        Response<string> resp = JsonSerializer.Deserialize<Response<string>>(data);
+                        Response<string> resp = JsonConvert.DeserializeObject<Response<string>>(data);
                         IHtmlDocument document = parser.ParseDocument(resp.result);
                         IElement infoEl = document.GetElementById("w-info")!;
 
@@ -115,7 +115,7 @@ public partial class _9anime : IDisposable
                     using (HttpContent content = res.Content)
                     {
                         string data = await content.ReadAsStringAsync();
-                        Response<string> resp = JsonSerializer.Deserialize<Response<string>>(data);
+                        Response<string> resp = JsonConvert.DeserializeObject<Response<string>>(data);
 
                         IHtmlDocument dom = parser.ParseDocument(string.Empty);
                         INodeList nodes = parser.ParseFragment(resp.result, dom.Body!);
@@ -218,7 +218,7 @@ public partial class _9anime : IDisposable
                         List<AnimeInfo> results = new List<AnimeInfo>();
 
                         string data = await content.ReadAsStringAsync();
-                        Response<WebpageSnippet> resp = JsonSerializer.Deserialize<Response<WebpageSnippet>>(data);
+                        Response<WebpageSnippet> resp = JsonConvert.DeserializeObject<Response<WebpageSnippet>>(data);
 
                         IHtmlDocument dom = parser.ParseDocument(string.Empty);
                         INodeList nodes = parser.ParseFragment(resp.result.html, dom.Body!);
@@ -266,7 +266,7 @@ public partial class _9anime : IDisposable
                     using (HttpContent content = res.Content)
                     {
                         string data = await content.ReadAsStringAsync();
-                        Response<string> resp = JsonSerializer.Deserialize<Response<string>>(data);
+                        Response<string> resp = JsonConvert.DeserializeObject<Response<string>>(data);
 
                         SourceList sourceList = new SourceList();
                         sourceList.episode = ep;
@@ -328,11 +328,11 @@ public partial class _9anime : IDisposable
                     using (HttpContent content = res.Content)
                     {
                         string data = await content.ReadAsStringAsync();
-                        Response<EncodedVideoEmbed> resp = JsonSerializer.Deserialize<Response<EncodedVideoEmbed>>(data);
+                        Response<EncodedVideoEmbed> resp = JsonConvert.DeserializeObject<Response<EncodedVideoEmbed>>(data);
                         
                         VideoEmbed embed = new VideoEmbed();
                         embed.url = Decoder.DecodeVideoData(resp.result.url);
-                        embed.skip_data = JsonSerializer.Deserialize<Dictionary<string, int[]>>(Decoder.DecodeSkipData(resp.result.skip_data));
+                        embed.skip_data = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(Decoder.DecodeSkipData(resp.result.skip_data));
                         embed.video = await embedScrapers[source.name].GetMp4Link(embed);
 
                         return embed;

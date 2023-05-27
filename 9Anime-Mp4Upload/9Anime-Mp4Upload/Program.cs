@@ -1,5 +1,6 @@
 ﻿using System.Net;
-using System.Text.Json;
+using Raudy.Net;
+using System.Text;
 
 // Project > Properties > Change from Console Application to Windows Application when moving to production
 
@@ -7,7 +8,7 @@ namespace Source
 {
     internal class Program
     {
-        static bool connected = false;
+        static bool running = true;
 
         static int Main(string[] args)
         {
@@ -33,7 +34,7 @@ namespace Source
             }*/
 
             // Boot Server
-            /*TCPServer server = new TCPServer(1024);
+            TCPServer server = new TCPServer(1024);
             server.onReceive += OnReceive;
             server.onAccept += OnAccept;
             server.onDisconnect += OnDisconnect;
@@ -46,11 +47,28 @@ namespace Source
             //server.Bind(new IPEndPoint(address, port));
             server.Bind(new IPEndPoint(IPAddress.Any, 65034));
 
-            // Running logic
-            Console.ReadKey();
+            Task execution = Task.Run(async void () =>
+            {
+                const int tickRate = 1000 / 20;
 
-            server.Dispose();*/
+                while (running)
+                {
+                    foreach (IPEndPoint ep in server.connections)
+                    {
+                        Message<string> heartBeat = Net.NewMessage<string>("HeartBeat");
+                        heartBeat.status = Status.SUCCESS;
+                        heartBeat.result = "";
+                        await server.SendTo(ep, Net.SerializeMessage(heartBeat));
+                    }
 
+                    Thread.Sleep(tickRate);
+                }
+            });
+            execution.Wait();
+
+            server.Dispose();
+
+            /*
             _9anime source = new _9anime();
 
             Task.Run(async void () => {
@@ -88,7 +106,7 @@ namespace Source
                 }
             });
 
-            Console.ReadLine();
+            Console.ReadLine();*/
 
             return 0;
         }
@@ -96,17 +114,31 @@ namespace Source
         // Manage connection
         static void OnAccept(IPEndPoint endPoint)
         {
-            Console.WriteLine("Accepted");
+            Console.WriteLine($"Connected: {endPoint}");
         }
 
         static void OnReceive(IPEndPoint endPoint, int received, byte[] buffer)
         {
-            Console.WriteLine("Received something");
+            try
+            {
+                string msg = Encoding.UTF8.GetString(buffer, 0, received);
+                string type = Net.MessageType(msg);
+                switch (type)
+                {
+                    default:
+                        Console.WriteLine($"Received unknown message type: {type}");
+                        break;
+                }
+            }
+            catch(Exception ex) 
+            {
+                Console.WriteLine(ex);
+            }
         }
 
         static void OnDisconnect(IPEndPoint endPoint)
         {
-            
+            Console.WriteLine($"Disconnected: {endPoint}");
         }
     }
 }

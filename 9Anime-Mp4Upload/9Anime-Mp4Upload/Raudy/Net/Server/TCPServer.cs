@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Net;
+using System.Threading;
 
 namespace Raudy.Net
 {
@@ -13,8 +14,11 @@ namespace Raudy.Net
         {
             private TCPServer server;
             private Socket? socket;
-            private byte[] buffer;
+            private NetworkStream? stream;
+            private byte[] recvBuffer;
+            private byte[] sendBuffer;
             private IPEndPoint endPoint;
+            //private SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
 
             // Handle current recieve task
             private Task? task;
@@ -25,22 +29,49 @@ namespace Raudy.Net
                 this.server = server;
                 this.endPoint = endPoint;
 
-                buffer = new byte[bufferSize];
+                recvBuffer = new byte[bufferSize];
+                sendBuffer = new byte[bufferSize];
                 this.socket = socket;
+
+                stream = new NetworkStream(socket);
 
                 task = Task.Factory.StartNew(ReceiveLoop, cancellationToken.Token);
             }
 
             private async Task ReceiveLoop()
             {
+                const int headerSize = sizeof(int);
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     if (socket == null) throw new NullReferenceException("socket was null.");
+                    if (stream == null) throw new NullReferenceException("stream was null.");
 
                     try
                     {
-                        int received = await socket.ReceiveAsync(buffer, SocketFlags.None);
-                        server.onReceive?.Invoke(endPoint, received, buffer);
+                        if (recvBuffer.Length < headerSize) recvBuffer = new byte[headerSize];
+
+                        int read = 0;
+                        while (read < headerSize)
+                        {
+                            int received = await stream.ReadAsync(recvBuffer, read, headerSize);
+                            if (received == 0) throw new InvalidDataException("unexpected end-of-stream");
+                            read += received;
+                        }
+
+                        if (BitConverter.IsLittleEndian) Array.Reverse(recvBuffer, 0, sizeof(uint));
+                        int msgSize = BitConverter.ToInt32(recvBuffer, 0);
+                        if (recvBuffer.Length < msgSize) recvBuffer = new byte[msgSize];
+
+                        read = 0;
+                        while (read < msgSize)
+                        {
+                            int received = await stream.ReadAsync(recvBuffer, read, msgSize);
+                            if (received == 0) throw new InvalidDataException("unexpected end-of-stream");
+                            read += received;
+                        }
+
+                        server.onReceive?.Invoke(endPoint, msgSize, recvBuffer);
                     }
                     catch (ObjectDisposedException)
                     {
@@ -55,7 +86,20 @@ namespace Raudy.Net
 
                 try
                 {
-                    await socket.SendAsync(buffer, SocketFlags.None);
+                    if (buffer.Length > int.MaxValue) throw new Exception("size of individual message is too large.");
+
+                    byte[] msgSize = BitConverter.GetBytes(buffer.Length);
+                    if (BitConverter.IsLittleEndian) Array.Reverse(msgSize);
+
+                    if (sendBuffer.Length < buffer.Length + msgSize.Length)
+                    {
+                        sendBuffer = new byte[buffer.Length + msgSize.Length];
+                    }
+
+                    Array.Copy(msgSize, 0, sendBuffer, 0, msgSize.Length);
+                    Array.Copy(buffer, 0, sendBuffer, msgSize.Length, buffer.Length);
+
+                    await socket.SendAsync(sendBuffer, SocketFlags.None);
                 }
                 catch (SocketException) // TODO(randomuserhi): Check if this is the right socket exception to test for
                 {
@@ -70,26 +114,38 @@ namespace Raudy.Net
 
             public void Dispose()
             {
-                if (socket == null) return;
+                if (socket != null)
+                {
+                    socket.Dispose();
 
-                socket.Dispose();
+                    server.onDisconnect?.Invoke(endPoint);
+                    server._connections.Remove(endPoint, out _);
+                }
+
                 if (task != null)
                 {
                     cancellationToken.Cancel();
-                    task.Wait();
 
                     cancellationToken = new CancellationTokenSource();
+                    task.Dispose();
                     task = null;
                 }
 
-                server.onDisconnect?.Invoke(endPoint);
-                server.connections.Remove(endPoint, out _);
+                if (stream != null)
+                {
+                    stream.Dispose();
+                    stream = null;
+                }
             }
         }
 
         private Socket? socket;
 
-        private ConcurrentDictionary<IPEndPoint, Connection> connections = new ConcurrentDictionary<IPEndPoint, Connection>();
+        private ConcurrentDictionary<IPEndPoint, Connection> _connections = new ConcurrentDictionary<IPEndPoint, Connection>();
+        public ICollection<IPEndPoint> connections
+        {
+            get { return _connections.Keys; }
+        }
 
         // Handle current socket task (Accept loop / Connect loop)
         private Task? task;
@@ -108,12 +164,12 @@ namespace Raudy.Net
 
         public async Task SendTo(IPEndPoint remoteEndPoint, byte[] buffer)
         {
-            await connections[remoteEndPoint].Send(buffer);
+            await _connections[remoteEndPoint].Send(buffer);
         }
 
         public void Disconnect(IPEndPoint remoteEndPoint)
         {
-            connections[remoteEndPoint].Disconnect();
+            _connections[remoteEndPoint].Disconnect();
         }
 
         public IPEndPoint LocalEndPoint { 
@@ -161,9 +217,9 @@ namespace Raudy.Net
             }
             socket = null;
 
-            foreach (Connection conn in connections.Values)
+            foreach (Connection conn in _connections.Values)
                 conn.Dispose();
-            connections.Clear();
+            _connections.Clear();
         }
 
         public void Bind(IPEndPoint endPoint)
@@ -186,11 +242,11 @@ namespace Raudy.Net
                 try
                 {
                     Socket connection = await socket.AcceptAsync();
-                    IPEndPoint? ep = connection.LocalEndPoint as IPEndPoint;
+                    IPEndPoint? ep = connection.RemoteEndPoint as IPEndPoint;
                     if (ep != null)
                     {
                         // NOTE(randomuserhi): on update, keep the old socket and dispose of this socket
-                        connections.AddOrUpdate(ep, new Connection(this, ep, connection, bufferSize), (key, old) => { connection.Dispose(); return old; });
+                        _connections.AddOrUpdate(ep, new Connection(this, ep, connection, bufferSize), (key, old) => { connection.Dispose(); return old; });
                         onAccept?.Invoke(ep);
                     }
                     else connection.Dispose();

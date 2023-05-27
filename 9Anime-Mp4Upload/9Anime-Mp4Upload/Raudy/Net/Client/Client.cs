@@ -1,5 +1,6 @@
 ﻿using CefSharp.DevTools.IO;
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 
@@ -12,7 +13,9 @@ namespace Raudy.Net
         public delegate void DisconnectDelegate(IPEndPoint endPoint);
 
         private Socket? socket;
-        private byte[] buffer;
+        private NetworkStream? stream;
+        private byte[] recvBuffer;
+        private byte[] sendBuffer;
 
         public ReceiveDelegate? onReceive;
         public ConnectDelegate? onConnect;
@@ -24,7 +27,8 @@ namespace Raudy.Net
 
         public TCPClient(int bufferSize)
         {
-            buffer = new byte[bufferSize];
+            recvBuffer = new byte[bufferSize];
+            sendBuffer = new byte[bufferSize];
         }
 
         public IPEndPoint LocalEndPoint
@@ -56,6 +60,8 @@ namespace Raudy.Net
             if (socket != null) Dispose();
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.ReuseAddress, true);
+
+            stream = new NetworkStream(socket);
         }
 
         public async Task Connect(IPEndPoint endPoint)
@@ -71,9 +77,12 @@ namespace Raudy.Net
 
         private async Task ReceiveLoop()
         {
+            const int headerSize = sizeof(int);
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 if (socket == null) throw new NullReferenceException("socket was null.");
+                if (stream == null) throw new NullReferenceException("network stream was null.");
 
                 IPEndPoint? ep = socket.LocalEndPoint as IPEndPoint;
                 if (ep == null)
@@ -84,8 +93,29 @@ namespace Raudy.Net
 
                 try
                 {
-                    int received = await socket.ReceiveAsync(buffer, SocketFlags.None);
-                    onReceive?.Invoke(ep, received, buffer);
+                    if (recvBuffer.Length < headerSize) recvBuffer = new byte[headerSize];
+
+                    int read = 0;
+                    while (read < headerSize)
+                    {
+                        int received = await stream.ReadAsync(recvBuffer, 0, headerSize);
+                        if (received == 0) throw new InvalidDataException("unexpected end-of-stream");
+                        read += received;
+                    }
+
+                    if (BitConverter.IsLittleEndian) Array.Reverse(recvBuffer, 0, sizeof(int));
+                    int msgSize = BitConverter.ToInt32(recvBuffer, 0);
+                    if (recvBuffer.Length < msgSize) recvBuffer = new byte[msgSize];
+
+                    read = 0;
+                    while (read < msgSize)
+                    {
+                        int received = await stream.ReadAsync(recvBuffer, 0, headerSize);
+                        if (received == 0) throw new InvalidDataException("unexpected end-of-stream");
+                        read += received;
+                    }
+
+                    onReceive?.Invoke(ep, msgSize, recvBuffer);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -100,7 +130,20 @@ namespace Raudy.Net
 
             try
             {
-                await socket.SendAsync(buffer, SocketFlags.None);
+                if (buffer.Length > int.MaxValue) throw new Exception("size of individual message is too large.");
+
+                byte[] msgSize = BitConverter.GetBytes(buffer.Length);
+                if (BitConverter.IsLittleEndian) Array.Reverse(msgSize);
+
+                if (sendBuffer.Length < buffer.Length + msgSize.Length)
+                {
+                    sendBuffer = new byte[buffer.Length + msgSize.Length];
+                }
+
+                Array.Copy(msgSize, 0, sendBuffer, 0, msgSize.Length);
+                Array.Copy(buffer, 0, sendBuffer, msgSize.Length, buffer.Length);
+
+                await socket.SendAsync(sendBuffer, SocketFlags.None);
             }
             catch (SocketException) // TODO(randomuserhi): Check if this is the right socket exception to test for
             {
@@ -117,22 +160,31 @@ namespace Raudy.Net
 
         public void Dispose()
         {
-            if (socket == null) return;
+            if (socket != null)
+            {
+                IPEndPoint? ep = socket.RemoteEndPoint as IPEndPoint;
 
-            IPEndPoint? ep = socket.RemoteEndPoint as IPEndPoint;
+                socket.Dispose();
+                socket = null;
 
-            socket.Dispose();
+                if (ep != null) onDisconnect?.Invoke(ep);
+            }
+
             if (task != null)
             {
                 cancellationToken.Cancel();
                 task.Wait();
 
                 cancellationToken = new CancellationTokenSource();
+                task.Dispose();
                 task = null;
             }
-            socket = null;
 
-            if (ep != null) onDisconnect?.Invoke(ep);
+            if (stream != null)
+            {
+                stream.Dispose();
+                stream = null;
+            }
         }
     }
 }
