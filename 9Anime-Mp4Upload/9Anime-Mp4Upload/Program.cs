@@ -51,17 +51,39 @@ namespace Source
 
             server.Dispose();*/
 
+            _9anime source = new _9anime();
+
             Task.Run(async void () => {
-                _9anime.VideoEmbed? resp = await _9anime.GetEmbed("HT6WCcIh");
-                if (resp is _9anime.VideoEmbed embed)
+                _9anime.Query? query = await source.Search("one piece");
+                Console.WriteLine(query?.results[0].link);
+
+                _9anime.AnimeInfo info = new _9anime.AnimeInfo();
+                info.link = query?.results[0].link!;
+                _9anime.Anime? anime = await source.GetFullAnimeDetails(info);
+
+                _9anime.EpisodeList? episodes = await source.GetEpisodes(anime.Value, _9anime.Category.Sub);
+
+                if (episodes != null)
                 {
-                    if (embed.skip_data is Dictionary<string, int[]> skip_data)
+                    _9anime.EpisodeList list = episodes.Value;
+                    foreach (_9anime.Episode ep in list.episodes)
                     {
-                        Console.WriteLine(embed.url);
-                        foreach (string key in skip_data.Keys)
+                        Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.enTitle}: {ep.category}");
+                    }
+
+                    _9anime.SourceList? sourceList = await source.GetSources(list.episodes[0]);
+
+                    if (sourceList != null)
+                    {
+                        _9anime.SourceList slist = sourceList.Value;
+
+                        foreach (_9anime.Source src in slist.sources)
                         {
-                            Console.WriteLine($"{key}: {skip_data[key][0]}");
+                            Console.WriteLine($"{src.name}: {src.id}");
                         }
+
+                        _9anime.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
+                        Console.WriteLine(embed?.video?.url);
                     }
                 }
             });
