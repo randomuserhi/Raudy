@@ -35,7 +35,7 @@ public partial class _9anime
                         using (HttpContent content = res.Content)
                         {
                             string data = await content.ReadAsStringAsync();
-                            int index = data.IndexOf("https://www6.mp4upload.com/files/");
+                            int index = data.IndexOf("src: \"") + 6;
                             if (index >= 0)
                             {
                                 StringBuilder link = new StringBuilder();

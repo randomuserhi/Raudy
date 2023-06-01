@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Raudy.Net;
 using System.Text;
+using Microsoft.VisualBasic;
 
 // Project > Properties > Change from Console Application to Windows Application when moving to production
 
@@ -68,16 +69,18 @@ namespace Source
 
             server.Dispose();
 
-            /*
-            _9anime source = new _9anime();
+            
+            /*_9anime source = new _9anime();
 
             Task.Run(async void () => {
-                _9anime.Query? query = await source.Search("one piece");
+                _9anime.Query? query = await source.Search("oshi no ko");
                 Console.WriteLine(query?.results[0].link);
 
                 _9anime.AnimeInfo info = new _9anime.AnimeInfo();
                 info.link = query?.results[0].link!;
                 _9anime.Anime? anime = await source.GetFullAnimeDetails(info);
+
+                Console.WriteLine(info.thumbnail);
 
                 _9anime.EpisodeList? episodes = await source.GetEpisodes(anime.Value, _9anime.Category.Sub);
 
@@ -125,6 +128,9 @@ namespace Source
                 string type = Net.MessageType(msg);
                 switch (type)
                 {
+                    case "HeartBeat":
+                        Console.WriteLine($"Heartbeat received");
+                        break;
                     default:
                         Console.WriteLine($"Received unknown message type: {type}");
                         break;

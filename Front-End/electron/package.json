@@ -19,7 +19,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.0"
+    "@types/ws": "^8.5.4",
+    "electron-squirrel-startup": "^1.0.0",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.1.1",

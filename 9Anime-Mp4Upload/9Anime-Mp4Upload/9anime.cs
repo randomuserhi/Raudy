@@ -329,7 +329,7 @@ public partial class _9anime : IDisposable
                     {
                         string data = await content.ReadAsStringAsync();
                         Response<EncodedVideoEmbed> resp = JsonConvert.DeserializeObject<Response<EncodedVideoEmbed>>(data);
-                        
+
                         VideoEmbed embed = new VideoEmbed();
                         embed.url = Decoder.DecodeVideoData(resp.result.url);
                         embed.skip_data = JsonConvert.DeserializeObject<Dictionary<string, int[]>>(Decoder.DecodeSkipData(resp.result.skip_data));
