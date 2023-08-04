@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -37,23 +38,41 @@ public partial class Aniwave
                 request.Headers.Add("Accept-Language", "en-GB,en-US;q=0.9,en;q=0.8");
                 request.Headers.Add("Range", "bytes=0-");
 
-                using (HttpResponseMessage res = await client.SendAsync(request))
+                // NOTE(randomuserhi): HttpCompletionOption.ResponseHeadersRead is needed to ensure only the response header is read
+                //                     Since otherwise it downloads the entire mp4 content from mp4upload causin sendasync to hang forever
+                //                     until the mp4 completes downloading then writes to file.
+                //
+                //                     Once the response header is read, we read the mp4 bytes as it is being downloaded and write them to a file
+                //                     https://www.stevejgordon.co.uk/using-httpcompletionoption-responseheadersread-to-improve-httpclient-performance-dotnet
+                //                     
+                //                     We can create a progress bar using the response header Content-Length property
+                using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    // This works, but takes a goddamn while... (let it hang)
-                    // since it is literally downloading the entire file into memory before proceeding
-                    // look into: https://stackoverflow.com/questions/20661652/progress-bar-with-httpclient
                     Console.WriteLine(res.IsSuccessStatusCode);
                     if (res.IsSuccessStatusCode)
                     {
                         using (HttpContent content = res.Content)
                         {
+                            HttpHeaders headers = content.Headers;
+                            IEnumerable<string>? values;
+                            float contentLength;
+                            if (headers.TryGetValues("Content-Length", out values))
+                            {
+                                contentLength = int.Parse(values.First());
+                                Console.WriteLine(contentLength);
+                            }
+                            else throw new Exception("No 'Content-Length' header");
+
                             Stream data = await content.ReadAsStreamAsync();
                             FileStream writer = new FileStream("E:/test.mp4", FileMode.CreateNew);
                             byte[] buffer = new byte[16 * 1024];
+                            float total = 0;
                             int read;
                             while ((read = data.Read(buffer, 0, buffer.Length)) > 0)
                             {
                                 writer.Write(buffer, 0, read);
+                                total += read;
+                                Console.WriteLine(total / contentLength);
                             }
                             writer.Dispose();
                         }
