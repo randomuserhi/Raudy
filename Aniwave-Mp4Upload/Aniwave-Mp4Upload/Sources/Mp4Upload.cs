@@ -23,6 +23,7 @@ public partial class Aniwave
             client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
         }
 
+        // TODO(randomuserhi): Cleanup or write proper API / design => This is test code to check if I can spoof Host and Origin to get file from mp4upload
         public async Task DownloadVideo(string url)
         {
             try
@@ -38,10 +39,13 @@ public partial class Aniwave
 
                 using (HttpResponseMessage res = await client.SendAsync(request))
                 {
+                    // This works, but takes a goddamn while... (let it hang)
+                    // since it is literally downloading the entire file into memory before proceeding
+                    // look into: https://stackoverflow.com/questions/20661652/progress-bar-with-httpclient
                     Console.WriteLine(res.IsSuccessStatusCode);
                     if (res.IsSuccessStatusCode)
                     {
-                        /*using (HttpContent content = res.Content)
+                        using (HttpContent content = res.Content)
                         {
                             Stream data = await content.ReadAsStreamAsync();
                             FileStream writer = new FileStream("E:/test.mp4", FileMode.CreateNew);
@@ -52,7 +56,7 @@ public partial class Aniwave
                                 writer.Write(buffer, 0, read);
                             }
                             writer.Dispose();
-                        }*/
+                        }
                     }
                 }
 
@@ -73,6 +77,7 @@ public partial class Aniwave
                 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
                     embed.url);
                 request.Headers.Add("Host", "www.mp4upload.com");
+                request.Headers.Add("Origin", "www.mp4upload.com");
 
                 using (HttpResponseMessage res = await client.SendAsync(request))
                 {
