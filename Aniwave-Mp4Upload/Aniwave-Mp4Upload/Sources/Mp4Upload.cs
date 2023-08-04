@@ -64,7 +64,7 @@ public partial class Aniwave
                             else throw new Exception("No 'Content-Length' header");
 
                             Stream data = await content.ReadAsStreamAsync();
-                            FileStream writer = new FileStream("E:/test.mp4", FileMode.CreateNew);
+                            FileStream writer = new FileStream("E:/test.mp4", FileMode.Create);
                             byte[] buffer = new byte[16 * 1024];
                             float total = 0;
                             int read;
