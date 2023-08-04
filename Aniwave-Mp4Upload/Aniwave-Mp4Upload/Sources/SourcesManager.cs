@@ -1,4 +1,4 @@
-﻿public partial class _9anime
+﻿public partial class Aniwave
 {
     interface ISource
     {

@@ -35,7 +35,7 @@ namespace Source
             }*/
 
             // Boot Server
-            TCPServer server = new TCPServer(1024);
+            /*TCPServer server = new TCPServer(1024);
             server.onReceive += OnReceive;
             server.onAccept += OnAccept;
             server.onDisconnect += OnDisconnect;
@@ -67,49 +67,50 @@ namespace Source
             });
             execution.Wait();
 
-            server.Dispose();
+            server.Dispose();*/
 
-            
-            /*_9anime source = new _9anime();
+
+            Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                _9anime.Query? query = await source.Search("oshi no ko");
+                Aniwave.Query? query = await source.Search("oshi no ko");
                 Console.WriteLine(query?.results[0].link);
 
-                _9anime.AnimeInfo info = new _9anime.AnimeInfo();
+                Aniwave.AnimeInfo info = new Aniwave.AnimeInfo();
                 info.link = query?.results[0].link!;
-                _9anime.Anime? anime = await source.GetFullAnimeDetails(info);
+                Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
 
                 Console.WriteLine(info.thumbnail);
 
-                _9anime.EpisodeList? episodes = await source.GetEpisodes(anime.Value, _9anime.Category.Sub);
+                Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Sub);
 
                 if (episodes != null)
                 {
-                    _9anime.EpisodeList list = episodes.Value;
-                    foreach (_9anime.Episode ep in list.episodes)
+                    Aniwave.EpisodeList list = episodes.Value;
+                    foreach (Aniwave.Episode ep in list.episodes)
                     {
                         Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.enTitle}: {ep.category}");
                     }
 
-                    _9anime.SourceList? sourceList = await source.GetSources(list.episodes[0]);
+                    Aniwave.SourceList? sourceList = await source.GetSources(list.episodes[0]);
 
                     if (sourceList != null)
                     {
-                        _9anime.SourceList slist = sourceList.Value;
+                        Aniwave.SourceList slist = sourceList.Value;
 
-                        foreach (_9anime.Source src in slist.sources)
+                        foreach (Aniwave.Source src in slist.sources)
                         {
                             Console.WriteLine($"{src.name}: {src.id}");
                         }
 
-                        _9anime.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
+                        Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
+                        Console.WriteLine(embed?.url);
                         Console.WriteLine(embed?.video?.url);
                     }
                 }
             });
 
-            Console.ReadLine();*/
+            Console.ReadLine();
 
             return 0;
         }

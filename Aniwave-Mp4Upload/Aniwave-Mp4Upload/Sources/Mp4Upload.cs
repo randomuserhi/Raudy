@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using Newtonsoft.Json;
 
-public partial class _9anime
+public partial class Aniwave
 {
     public class Mp4Upload : ISource, IDisposable
     {

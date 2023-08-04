@@ -5,11 +5,11 @@ using Raudy.Url;
 using Newtonsoft.Json;
 
 // TODO(randomuserhi): Better exception handling => need to write to a log file etc...
-// TODO(randomuserhi): A method to get information from 9anime filter => e.g latest, newest etc...
+// TODO(randomuserhi): A method to get information from aniwave filter => e.g latest, newest etc...
 
-public partial class _9anime : IDisposable
+public partial class Aniwave : IDisposable
 {
-    private const string baseUrl = "https://9anime.to/"; 
+    private const string baseUrl = "https://aniwave.to"; 
 
     private HttpClient client;
     private HtmlParser parser = new HtmlParser();
@@ -20,7 +20,7 @@ public partial class _9anime : IDisposable
         client.Dispose();
     }
 
-    public _9anime()
+    public Aniwave()
     {
         // Supported sources
         embedScrapers.Add("mp4upload", new Mp4Upload());
@@ -93,7 +93,7 @@ public partial class _9anime : IDisposable
         }
         catch (Exception exception)
         {
-            Console.WriteLine("Error trying to obtain episode list:");
+            Console.WriteLine($"Error trying to obtain episode list: {url}");
             Console.WriteLine(exception);
             return null;
         }
@@ -101,10 +101,12 @@ public partial class _9anime : IDisposable
 
     public async Task<EpisodeList?> GetEpisodes(Anime anime, Category categories) 
     {
+        string url = $"{baseUrl}/ajax/episode/list/{anime.id}?vrf={Decoder.GetVrf(anime.id)}";
+        Console.WriteLine(url);
         try
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://9anime.to/ajax/episode/list/{anime.id}?vrf={Decoder.GetVrf(anime.id)}");
+               url);
             request.Headers.Referrer = new Uri(anime.link); // NOTE(randomuserhi): Important to set the referrer to imitate that we are from the site
             request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
 
@@ -192,7 +194,7 @@ public partial class _9anime : IDisposable
         }
         catch (Exception exception)
         {
-            Console.WriteLine("Error trying to obtain episode:");
+            Console.WriteLine($"Error trying to obtain episode: {url}");
             Console.WriteLine(exception);
             return null;
         }
@@ -200,10 +202,11 @@ public partial class _9anime : IDisposable
 
     public async Task<Query?> Search(string keyword)
     {
+        string url = $"{baseUrl}/ajax/anime/search?keyword={keyword}";
         try
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://9anime.to/ajax/anime/search?keyword={keyword}");
+                url);
             request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
 
             using (HttpResponseMessage res = await client.SendAsync(request))
@@ -244,7 +247,7 @@ public partial class _9anime : IDisposable
         }
         catch (Exception exception)
         {
-            Console.WriteLine("Error trying to obtain search query:");
+            Console.WriteLine($"Error trying to obtain search query: {url}");
             Console.WriteLine(exception);
             return null;
         }
@@ -252,10 +255,11 @@ public partial class _9anime : IDisposable
 
     public async Task<SourceList?> GetSources(Episode ep)
     {
+        string url = $"{baseUrl}/ajax/server/list/{ep.id}?vrf={Decoder.GetVrf(ep.id)}";
         try
         {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://9anime.to/ajax/server/list/{ep.id}?vrf={Decoder.GetVrf(ep.id)}");
+                url);
             request.Headers.Referrer = new Uri(ep.anime.link); // NOTE(randomuserhi): Important to set the referrer to imitate that we are from the site
             request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
 
@@ -300,7 +304,7 @@ public partial class _9anime : IDisposable
         }
         catch (Exception exception)
         {
-            Console.WriteLine("Error trying to obtain sources:");
+            Console.WriteLine($"Error trying to obtain sources: {url}");
             Console.WriteLine(exception);
             return null;
         }
@@ -308,6 +312,7 @@ public partial class _9anime : IDisposable
 
     public async Task<VideoEmbed?> GetEmbed(Source source)
     {
+        string url = $"{baseUrl}/ajax/server/{source.id}?vrf={Decoder.GetVrf(source.id)}";
         try
         {
             if (!embedScrapers.ContainsKey(source.name))
@@ -317,7 +322,7 @@ public partial class _9anime : IDisposable
             }
 
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://9anime.to/ajax/server/{source.id}?vrf={Decoder.GetVrf(source.id)}");
+                url);
             request.Headers.Referrer = new Uri(source.episode.anime.link); // NOTE(randomuserhi): Important to set the referrer to imitate that we are from the site
             request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
 
@@ -344,7 +349,7 @@ public partial class _9anime : IDisposable
         }
         catch (Exception exception)
         {
-            Console.WriteLine("Error trying to obtain video embed:");
+            Console.WriteLine($"Error trying to obtain video embed: {url}");
             Console.WriteLine(exception);
             return null;
         }
