@@ -9,11 +9,12 @@ using Newtonsoft.Json;
 
 public partial class Aniwave : IDisposable
 {
-    private const string baseUrl = "https://aniwave.to"; 
+    private const string domain = "aniwave.to";
+    private const string baseUrl = $"https://{domain}"; 
 
     private HttpClient client;
     private HtmlParser parser = new HtmlParser();
-    private Dictionary<string, ISource> embedScrapers = new Dictionary<string, ISource>();
+    public Dictionary<string, ISource> embedScrapers = new Dictionary<string, ISource>(); //TODO(randomuserhi): Change to private
 
     public void Dispose()
     {
@@ -30,6 +31,7 @@ public partial class Aniwave : IDisposable
         client.DefaultRequestHeaders.Referrer = new Uri(baseUrl);
 
         // Imitate request from chrome
+        client.DefaultRequestHeaders.Add("Host", domain);
         client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36");
         client.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
         client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Google Chrome\";v=\"113\", \"Chromium\";v=\"113\", \"Not-A.Brand\";v=\"24\"");

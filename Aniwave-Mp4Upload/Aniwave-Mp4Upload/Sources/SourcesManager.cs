@@ -1,7 +1,8 @@
 ﻿public partial class Aniwave
 {
-    interface ISource
+    public interface ISource // TODO(randomuserhi): Change to private
     {
         public Task<Video?> GetMp4Link(VideoEmbed embed);
+        public Task DownloadVideo(string url); // TODO(randomuserhi): Change
     }
 }

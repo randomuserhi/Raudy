@@ -106,6 +106,7 @@ namespace Source
                         Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
                         Console.WriteLine(embed?.url);
                         Console.WriteLine(embed?.video?.url);
+                        await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url);
                     }
                 }
             });
