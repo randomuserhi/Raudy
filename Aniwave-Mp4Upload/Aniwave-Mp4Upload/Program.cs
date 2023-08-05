@@ -73,7 +73,7 @@ namespace Source
             Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                Aniwave.Query? query = await source.Search("oshi no ko");
+                Aniwave.Query? query = await source.Search("hataraku");
                 Console.WriteLine(query?.results[0].link);
 
                 Aniwave.AnimeInfo info = new Aniwave.AnimeInfo();

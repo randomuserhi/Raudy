@@ -58,26 +58,26 @@ public partial class Aniwave
 
         private static string GetVrf_0(string data)
         {
-            for (int s = -164 * 37 + 5 * -1217 + -1 * -12153; s < data.Length; s++)
-                if (-9463 * -1 + -1 * -4174 + -13382 < (int)data[s])
+            for (int s = 0; s < data.Length; s++)
+                if (255 < data[s])
                     throw new Exception("Failed to compute Vrf");
             string r = "";
-            for (int s = 183 * -23 + -334 * -4 + 2873; s < data.Length; s += 5920 + -5888 + -29)
+            for (int s = 0; s < data.Length; s += 3)
             {
                 int?[] h = new int?[] { null, null, null, null };
-                h[-2260 + 4089 + 1 * -1829] = (int)data[s] >> -4035 + 1712 + 31 * 75;
-                h[-238 * -5 + 17 * -163 + 1582] = (-2790 + -7897 + -5345 * -2 & (int)data[s]) << (-152 * -8 + 9109 * 1 + 10321 * -1);
-                if (data.Length > (s + (-2474 + 6151 * 1 + -3676)))
+                h[0] = data[s] >> 2;
+                h[1] = (3 & data[s]) << 4;
+                if (data.Length > s + 1)
                 {
-                    h[1 * 4575 + 4736 + -490 * 19] |= (int)data[((s) + (-6331 + -831 * -1 + -5501 * -1))] >> 3551 + -8711 + -2 * -2582;
-                    h[1 * 5661 + -3977 + -841 * 2] = (-7313 * -1 + -2102 * -1 + -9400 & (int)data[(s + 7248 + -4056 + -3191 * 1)]) << -4669 + 1717 * -3 + 2 * 4911;
+                    h[1] |= data[s + 1] >> 4;
+                    h[2] = (15 & data[s + 1]) << 2;
                 }
-                if (data.Length > s + (-1938 + -1711 + 3651))
+                if (data.Length > s + 2)
                 {
-                    h[332 * -10 + 1 * 4957 + -1635] |= (int)data[s + (29 * 33 + -1061 * -4 + -5199 * 1)] >> -1 * 324 + -1 * 677 + 1007;
-                    h[-7531 * -1 + 2 * -353 + 18 * -379] = -1734 * -1 + -1 * -5271 + -6942 & (int)data[(s + (3 * -107 + 4 * 780 + -2797))];
+                    h[2] |= data[s + 2] >> 6;
+                    h[3] = 63 & data[s + 2];
                 }
-                for (var u = -4691 + 1581 + 3110; u < h.Length; u++)
+                for (var u = 0; u < h.Length; u++)
                 {
                     if (h[u] == null)
                     {
@@ -95,26 +95,38 @@ public partial class Aniwave
         {
             data = GetVrf_0(data);
             string r = "";
-            int n = -3739 * 2 + 8824 + -1338;
-            for (int h = 1 * 2207 + -9733 + 7526; h < data.Length; h++)
+            for (int h = 0; h < data.Length; h++)
             {
-                int u = (int)data[h];
-                if (h % n == 8542 + -3805 + -16 * 296)
-                    u += -2637 * 1 + -21 + 2661;
-                else if ((h % n) == (-2 * -657 + -4 * 136 + -763 * 1))
-                    u += 2 * 929 + 1867 + 2 * -1860;
-                else if (h % n == 1712 + -4788 + -342 * -9)
-                    u -= -6509 + -2715 * -1 + 1266 * 3;
-                else if ((h % n) == 1502 * -6 + 5 * -935 + -1 * -13691)
-                    u -= -4006 + -648 + 12 * 388;
-                else if (h % n == 1 * 9901 + -4842 * -1 + 14737 * -1)
-                    u += 5161 + -2580 + -859 * 3;
-                else if (h % n == -8459 + -1322 + 1 * 9781)
-                    u -= 1179 * 6 + 6794 + -13865;
-                else if (h % n == 77 * -29 + 9043 * -1 + 11279)
-                    u += -14 * -498 + 7824 + 2 * -7397;
-                else if ((h % n) == 4959 + -9 * 821 + -487 * -5)
-                    u += -597 * -7 + -7795 * -1 + -11969;
+                int u = data[h];
+                switch (h % 8)
+                {
+                    case 0:
+                        u -= 3;
+                        break;
+                    case 1:
+                        u += 3;
+                        break;
+                    case 2:
+                        u -= 4;
+                        break;
+                    case 3:
+                        u += 2;
+                        break;
+                    case 4:
+                        u -= 2;
+                        break;
+                    case 5:
+                        u += 5;
+                        break;
+                    case 6:
+                        u += 4;
+                        break;
+                    case 7:
+                        u += 5;
+                        break;
+                    default:
+                        throw new Exception("Unreachable");
+                }
                 r += char.ConvertFromUtf32(u);
             }
             r = GetVrf_0(r);
@@ -130,7 +142,7 @@ public partial class Aniwave
         }
         private static string GetVrf_1_aux(int t)
         {
-            return char.ConvertFromUtf32((t <= 'Z' ? -8936 + -2759 + 11785 : -3 * 403 + 119 * 69 + -6880) >= (t = t + (1 * 9089 + -5188 + 648 * -6)) ? t : t - (-1 * -5197 + -719 * 9 + 1300));
+            return char.ConvertFromUtf32((t <= 'Z' ? 'Z' : 'z') >= (t = t + 13) ? t : t - 26);
         }
 
         public static string GetVrf(string data)
