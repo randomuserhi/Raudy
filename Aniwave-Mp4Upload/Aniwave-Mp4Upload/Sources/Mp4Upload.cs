@@ -25,7 +25,7 @@ public partial class Aniwave
         }
 
         // TODO(randomuserhi): Cleanup or write proper API / design => This is test code to check if I can spoof Host and Origin to get file from mp4upload
-        public async Task DownloadVideo(string url)
+        public async Task DownloadVideo(string url, string fileName)
         {
             try
             {
@@ -64,7 +64,7 @@ public partial class Aniwave
                             else throw new Exception("No 'Content-Length' header");
 
                             Stream data = await content.ReadAsStreamAsync();
-                            FileStream writer = new FileStream("E:/test.mp4", FileMode.Create);
+                            FileStream writer = new FileStream($"E:/{fileName}.mp4", FileMode.Create);
                             byte[] buffer = new byte[16 * 1024];
                             float total = 0;
                             int read;

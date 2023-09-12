@@ -8,7 +8,11 @@ interface Constructor
 }
 type Prototype<T extends Constructor> = T extends { new(...args: any[]): any; prototype: infer Proto; } ? Proto : never;
 
-interface RHU extends EventTarget
+type ReadOnly<T> = { readonly [key in keyof T]: ReadOnly<T[key]> };
+type Mutable<T> = { -readonly [key in keyof T]: Mutable<T[key]> };
+type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+
+interface RHU
 {
     readonly version: string;
 
@@ -58,21 +62,10 @@ interface RHU extends EventTarget
 
     getElementById(id: string, clearID: boolean): HTMLElement | null;
 
-    require<T extends object, Module extends { hard: string[] }>(root: T, module: Module): RHU.Module.CastExists<T, Module>;
-
-    module<Module extends { hard: Path[], callback: (result?: RHU.ResolvedDependencies) => any, trace: Error }, Path extends string>(module: Module): Module;
-
-    import(module: RHU.Module): void;
+    module<T extends RHU.Module.Require, M extends RHU.Module.Exports>(trace: Error, name: M, require: T, callback: (require: RHU.Module.Imports<T>) => RHU.Modules[M]): void;
 
     readonly imports: RHU.Module[];
-
-    addEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | AddEventListenerOptions): void;
-
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
-
-    removeEventListener<T extends keyof RHU.EventMap>(type: string, listener: (this: RHU, ev: RHU.EventMap[T]) => any, options?: boolean | EventListenerOptions): void;
-
-    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void;
+    readonly waiting: RHU.Module[];
 
     CustomEvent<T = any>(type: string, detail: T): CustomEvent<T>;
 }
@@ -85,55 +78,6 @@ interface Window
 
 declare namespace RHU
 {
-    // Utilities used for type inference
-
-    // Converts a single string path, `"object.property"` into the type `{ object: { property: {} } }`
-    type PathToType<Key extends string, Value> =
-        Key extends `${infer Parent}.${infer Child}` ? { [P in Parent]: PathToType<Child, Value> } 
-                                                     : { [P in Key]: Value };
-
-    // Converts multiple string paths, `"object.a" | "object.b"` into the type `{ object: { a: {} } & { b: {} } }` 
-    //     => which is same as `{ object: { a: {}, b: {} } }`
-    type PathsToType<Keys extends string, Value> = 
-        { [Property in Keys]: (x: PathToType<Property, Value>) => void } extends { [k: string]: (x: infer Record) => void } ?
-        { [Property in keyof Record]: Record[Property] } : never;
-
-    // Gets the type of the value of a property inside T
-    type ValueOf<T extends object, Key extends string & keyof T> = 
-        T extends { [Property in Key]: infer Value } ? Value : never;
-    
-    // Gets the type of the array
-    type ArrayOf<Array extends any[]> = 
-        Array extends (infer T)[] ? T : never;
-    
-    // Traverses down a path by key
-    //     => TraversePath<"object", "object.property" | "other.example" | "object.other.a"> => "property" | "other.a"   
-    type TraversePath<Key extends string, Path> = 
-        Path extends `${Key}.${infer Child}` ? `${Child}` : never;
-
-    // Casts a type T into a type where the provided paths exist (not null | undefined)
-    //     => CastExists<{ a: number | undefined, b: number | undefined, c: number | undefined }, "a" | "b">
-    //         => { a: number, b: number, c: number | undefined }
-    //         => NOTE(randomuserhi): The above type is what it basically bois down to, but the actual type
-    //                                is represented differently. Refer to: 
-    //            https://stackoverflow.com/questions/76311435/typescript-infer-values-that-are-not-null-from-string-identifier
-    type CastExists<T extends object, Paths extends string> =
-        { [Property in string & keyof T]: ValueOf<T, Property> & PathsToType<TraversePath<Property, Paths>, {}> };
-
-    // Casts a type T into a type where the provided paths exist (not null | undefined)
-    // and then select a subset of properties
-    //     => CastExistsSubSet<{ a: number | undefined, b: number | undefined, c: number | undefined }, "a", "a" | "b">
-    //         => { a: number }
-    //             => "a" | "b" exist, but "a" was the only selected key to expose
-    //         => NOTE(randomuserhi): The above type is what it basically bois down to, but the actual type
-    //                                is represented differently. Refer to: 
-    //            https://stackoverflow.com/questions/76311435/typescript-infer-values-that-are-not-null-from-string-identifier
-    /**
-     * @deprecated The method should not be used
-     */
-    type CastExistsSubSet<T extends object, Keys extends string & keyof T, Paths extends string> = 
-        { [Property in Keys & keyof T]: ValueOf<T, Property> & PathsToType<TraversePath<Property, Paths>, {}> };
-
     // NOTE(randomuserhi): Type definitions to get around https://github.com/microsoft/TypeScript/issues/28357
     interface EventListener {
         (evt: Event): void;
@@ -165,16 +109,6 @@ declare namespace RHU
         readonly includes: Record<string, string>;
     }
 
-    interface EventMap
-    {
-        "load": LoadEvent;
-    }
-
-    interface LoadEvent
-    {
-        
-    }
-
     namespace Properties
     {
         interface Options
@@ -203,43 +137,28 @@ declare namespace RHU
         __args__(...args: any[]): ConstructorParameters<Base>;
     }
 
-    interface Dependencies
+    interface Module<T extends Module.Require = any, R = any>
     {
-        hard?: string[];
-        soft?: string[];
-        trace?: Error;
-    }
-
-    interface ResolvedDependency
-    {
-        has: string[];
-        missing: string[];
-    }
-
-    interface ResolvedDependencies
-    {
-        hard: ResolvedDependency;
-        soft: ResolvedDependency;
-        trace?: Error;
-    }
-
-    interface Module extends RHU.Dependencies
-    {
-        name?: string;
-        type?: RHU.ModuleType;
+        name: string;
         trace: Error;
-        callback?: (result: RHU.ResolvedDependencies) => any;
+        require: T;
+        callback: (require: RHU.Module.Imports<T>) => R;
     }
 
+    interface Modules {}
     namespace Module
     {
-        // Casts a type T into a type where the provided dependency strings exist (not null | undefined)
-        //     => CastExists<{ a: number | undefined, b: number | undefined, c: number | undefined }, { hard: ("a" | "b")[] }>
-        //         => { a: number, b: number, c: number | undefined }
-        //         => NOTE(randomuserhi): The above type is what it basically bois down to, but the actual type
-        //                                is represented differently. Refer to: 
-        //            https://stackoverflow.com/questions/76311435/typescript-infer-values-that-are-not-null-from-string-identifier
-        type CastExists<T extends object, Module extends { hard: string[] }> =
-            { [Property in string & keyof T]: ValueOf<T, Property> & PathsToType<TraversePath<Property, ArrayOf<ValueOf<Module, "hard">>>, {}> };
+        type Exports = keyof Modules;
+
+        type RequireProp = Exports | Require;
+        type Require = { [k: PropertyKey]: RequireProp };
+
+        type Imports<T> = {
+            [K in keyof T]: T[K] extends string 
+              ? T[K] extends Exports 
+                ? Modules[T[K]] 
+                : unknown
+              : Imports<T[K]>; 
+        };
     }
 }

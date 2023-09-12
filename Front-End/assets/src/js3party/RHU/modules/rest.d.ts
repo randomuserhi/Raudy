@@ -1,11 +1,10 @@
-interface RHU
-{
-
-    Rest?: RHU.Rest;
-}
-
 declare namespace RHU
 {
+    interface Modules
+    {
+        "rhu/rest": RHU.Rest;
+    }
+
     interface Rest
     {
         fetch<T>(options: RHU.Rest.Options<T, RHU.Rest.ParserFunc>): RHU.Rest.FetchFunc<T, RHU.Rest.ParserFunc>;

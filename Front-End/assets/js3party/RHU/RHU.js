@@ -14,43 +14,6 @@
                 Object.assign(result, opt);
                 return result;
             },
-            dependencies: function (options) {
-                let opt = {
-                    hard: [],
-                    soft: [],
-                    trace: undefined
-                };
-                core.parseOptions(opt, options);
-                let check = (items) => {
-                    let has = [];
-                    let missing = [];
-                    let set = {};
-                    for (let path of items) {
-                        if (core.exists(set[path]))
-                            continue;
-                        set[path] = true;
-                        let traversal = path.split(".");
-                        let obj = window;
-                        for (; traversal.length !== 0 && core.exists(obj); obj = obj[(traversal.shift())]) {
-                        }
-                        if (core.exists(obj))
-                            has.push(path);
-                        else
-                            missing.push(path);
-                    }
-                    return {
-                        has: has,
-                        missing: missing
-                    };
-                };
-                let hard = check(opt.hard);
-                let soft = check(opt.soft);
-                return {
-                    hard: hard,
-                    soft: soft,
-                    trace: opt.trace
-                };
-            },
             path: {
                 join: function (...paths) {
                     const separator = "/";
@@ -70,27 +33,6 @@
             readyState: "loading"
         };
     })();
-    let result = core.dependencies({
-        hard: [
-            "document.createElement",
-            "document.head",
-            "document.createTextNode",
-            "window.Function",
-            "Map",
-            "Set",
-            "Reflect"
-        ]
-    });
-    if (result.hard.missing.length !== 0) {
-        let msg = `RHU was unable to import due to missing dependencies.`;
-        if (core.exists(result.trace) && core.exists(result.trace.stack))
-            msg += `\n${result.trace.stack.split("\n").splice(1).join("\n")}\n`;
-        for (let dependency of result.hard.missing) {
-            msg += (`\n\tMissing '${dependency}'`);
-        }
-        console.error(msg);
-        return;
-    }
     (function () {
         let loaded;
         let scripts = document.getElementsByTagName("script");
@@ -438,109 +380,88 @@
         RHU.definePublicAccessor(RHU, "config", {
             get: function () { return core.config; }
         });
-        let isEventListener = function (listener) {
-            return listener instanceof Function;
-        };
-        let node = document.createTextNode("");
-        let addEventListener = node.addEventListener.bind(node);
-        RHU.addEventListener = function (type, listener, options) {
-            let context = RHU;
-            if (isEventListener(listener))
-                addEventListener(type, ((e) => { listener.call(context, e.detail); }), options);
-            else
-                addEventListener(type, ((e) => { listener.handleEvent.call(context, e.detail); }), options);
-        };
-        RHU.removeEventListener = node.removeEventListener.bind(node);
-        RHU.dispatchEvent = node.dispatchEvent.bind(node);
     })();
     (function () {
-        core.moduleLoader = {
-            importList: new Set(),
-            watching: [],
-            imported: [],
-            run: function (module) {
-                if (core.exists(module.callback))
-                    module.callback(result);
-                this.imported.push(module);
-            },
-            execute: function (module) {
-                let result = core.dependencies(module);
-                if (result.hard.missing.length === 0) {
-                    this.run(module);
-                    return true;
+        const require = (object, result, missing) => {
+            for (const [key, value] of Object.entries(object)) {
+                if (typeof value === "string" || value instanceof String) {
+                    const module = core.moduleLoader.get(value);
+                    if (RHU.exists(module)) {
+                        result[key] = module;
+                    }
+                    else {
+                        missing.push(value);
+                    }
                 }
                 else {
-                    let msg = `could not loaded as not all hard dependencies were found.`;
-                    if (core.exists(result.trace) && core.exists(result.trace.stack))
-                        msg += `\n${result.trace.stack.split("\n").splice(1).join("\n")}\n`;
-                    for (let dependency of result.hard.missing) {
-                        msg += (`\n\tMissing '${dependency}'`);
-                    }
-                    if (core.exists(module.name))
-                        console.warn(`Module, '${module.name}', ${msg}`);
-                    else
-                        console.warn(`Unknown module ${msg}`);
+                    require(value, result, missing);
+                }
+            }
+        };
+        core.moduleLoader = {
+            loading: new Set(),
+            watching: [],
+            imported: [],
+            skipped: [],
+            cache: new Map(),
+            set: function (module, obj) {
+                if (this.cache.has(module))
                     return false;
+                this.cache.set(module, obj);
+            },
+            get: function (module) {
+                if (this.cache.has(module)) {
+                    return this.cache.get(module);
+                }
+                else {
+                    return undefined;
                 }
             },
-            reconcile: function (allowPartial = false) {
+            onLoad: function (module) {
+                this.loading.delete(module);
+            },
+            execute: function (module) {
+                if (this.cache.has(module.name)) {
+                    console.warn(`${module.name} was skipped as a module of the same name was already imported.${core.exists(module.trace.stack)
+                        ? "\n" + module.trace.stack.split("\n")[1]
+                        : ""}`);
+                    this.skipped.push(module);
+                    return;
+                }
+                const missing = [];
+                const req = {};
+                require(module.require, req, missing);
+                if (missing.length === 0) {
+                    const result = module.callback(req);
+                    this.set(module.name, result);
+                    this.imported.push(module);
+                }
+                else {
+                    this.watching.push(module);
+                }
+            },
+            reconcile: function (module) {
+                this.watching.push(module);
                 let oldLen = this.watching.length;
                 do {
                     oldLen = this.watching.length;
                     let old = this.watching;
                     this.watching = [];
                     for (let module of old) {
-                        let result = core.dependencies(module);
-                        if ((!allowPartial && (result.hard.missing.length === 0 && result.soft.missing.length === 0))
-                            || (allowPartial && result.hard.missing.length === 0)) {
-                            if (core.exists(module.callback))
-                                module.callback(result);
-                            this.imported.push(module);
-                        }
-                        else
-                            this.watching.push(module);
+                        this.execute(module);
                     }
                 } while (oldLen !== this.watching.length);
             },
-            load: function (module) {
-                if (core.readyState !== RHU.COMPLETE) {
-                    this.watching.push(module);
-                }
-                else
-                    this.execute(module);
-            },
-            onLoad: function (isSuccessful, module) {
-                if (isSuccessful)
-                    this.reconcile();
-                this.importList.delete(module);
-                if (this.importList.size === 0)
-                    this.onComplete();
-            },
-            onComplete: function () {
-                core.readyState = RHU.COMPLETE;
-                this.reconcile();
-                this.reconcile(true);
-                for (let module of this.watching)
-                    this.execute(module);
-                if (core.exists(core.loader.root.params.load))
-                    if (core.exists(window[core.loader.root.params.load]))
-                        window[core.loader.root.params.load]();
-                    else
-                        console.error(`Callback for 'load' event called '${core.loader.root.params.load}' does not exist.`);
-                RHU.dispatchEvent(RHU.CustomEvent("load", {}));
-            }
         };
         let RHU = window.RHU;
-        RHU.require = function (root, module) {
-            if (core.dependencies(module).hard.missing.length === 0)
-                return root;
-            throw new ReferenceError("Not all hard dependencies were available.");
-        };
-        RHU.module = function (module) {
-            return module;
-        };
-        RHU.import = function (module) {
-            core.moduleLoader.load(module);
+        RHU.module = function (trace, name, require, callback) {
+            core.moduleLoader.reconcile({
+                trace: trace,
+                name: name,
+                require: require,
+                callback: callback,
+            });
+            return undefined;
         };
         RHU.definePublicAccessor(RHU, "imports", {
             get: function () {
@@ -548,7 +469,7 @@
                 obj.toString = function () {
                     let msg = "Imports in order of execution:";
                     for (let module of obj) {
-                        msg += `\n${core.exists(module.name) ? module.name : "Unknown"}${core.exists(module.trace) && core.exists(module.trace.stack)
+                        msg += `\n${module.name}${core.exists(module.trace.stack)
                             ? "\n" + module.trace.stack.split("\n")[1]
                             : ""}`;
                     }
@@ -557,16 +478,39 @@
                 return obj;
             }
         });
+        RHU.definePublicAccessor(RHU, "waiting", {
+            get: function () {
+                let obj = [...core.moduleLoader.watching];
+                obj.toString = function () {
+                    let msg = "Modules being watched:";
+                    for (let module of obj) {
+                        msg += `\n${module.name}${core.exists(module.trace.stack)
+                            ? "\n" + module.trace.stack.split("\n")[1]
+                            : ""}${(() => {
+                            const missing = [];
+                            require(module.require, {}, missing);
+                            let list = "";
+                            for (const module of missing) {
+                                list += `\n\t- \'${module}\' is missing`;
+                            }
+                            return list;
+                        })()}`;
+                    }
+                    return msg;
+                };
+                return obj;
+            }
+        });
         for (let module of core.config.modules) {
-            core.moduleLoader.importList.add({
+            core.moduleLoader.loading.add({
                 path: core.loader.root.path(core.path.join("modules", `${module}.js`)),
                 name: module,
                 type: RHU.MODULE
             });
         }
         for (let module of core.config.extensions) {
-            core.moduleLoader.importList.add({
-                path: core.loader.root.path(core.path.join("modules", `${module}.js`)),
+            core.moduleLoader.loading.add({
+                path: core.loader.root.path(core.path.join("extensions", `${module}.js`)),
                 name: module,
                 type: RHU.EXTENSION
             });
@@ -583,22 +527,18 @@
                     path = core.path.join(includePath, `${module}.js`);
                 else
                     path = core.loader.root.path(core.path.join(includePath, `${module}.js`));
-                core.moduleLoader.importList.add({
+                core.moduleLoader.loading.add({
                     path: path,
                     name: module,
                     type: RHU.MODULE
                 });
             }
         }
-        if (core.moduleLoader.importList.size === 0)
-            core.moduleLoader.onComplete();
-        else {
-            for (let module of core.moduleLoader.importList) {
-                core.loader.JS(module.path, {
-                    name: module.name,
-                    type: module.type
-                }, (isSuccessful) => core.moduleLoader.onLoad(isSuccessful, module));
-            }
+        for (let module of core.moduleLoader.loading) {
+            core.loader.JS(module.path, {
+                name: module.name,
+                type: module.type
+            }, () => core.moduleLoader.onLoad(module));
         }
     })();
 })();

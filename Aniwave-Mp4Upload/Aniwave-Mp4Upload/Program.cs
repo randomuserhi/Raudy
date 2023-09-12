@@ -73,7 +73,7 @@ namespace Source
             Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                Aniwave.Query? query = await source.Search("hataraku");
+                Aniwave.Query? query = await source.Search("penguin drum");
                 Console.WriteLine(query?.results[0].link);
 
                 Aniwave.AnimeInfo info = new Aniwave.AnimeInfo();
@@ -89,24 +89,26 @@ namespace Source
                     Aniwave.EpisodeList list = episodes.Value;
                     foreach (Aniwave.Episode ep in list.episodes)
                     {
+                        if (ep.epNum != "9") continue;
+
                         Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.enTitle}: {ep.category}");
-                    }
 
-                    Aniwave.SourceList? sourceList = await source.GetSources(list.episodes[0]);
+                        Aniwave.SourceList? sourceList = await source.GetSources(ep);
 
-                    if (sourceList != null)
-                    {
-                        Aniwave.SourceList slist = sourceList.Value;
-
-                        foreach (Aniwave.Source src in slist.sources)
+                        if (sourceList != null)
                         {
-                            Console.WriteLine($"{src.name}: {src.id}");
-                        }
+                            Aniwave.SourceList slist = sourceList.Value;
 
-                        Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
-                        Console.WriteLine(embed?.url);
-                        Console.WriteLine(embed?.video?.url);
-                        await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url);
+                            foreach (Aniwave.Source src in slist.sources)
+                            {
+                                Console.WriteLine($"{src.name}: {src.id}");
+                            }
+
+                            Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
+                            Console.WriteLine(embed?.url);
+                            Console.WriteLine(embed?.video?.url);
+                            await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.enTitle}");
+                        }
                     }
                 }
             });

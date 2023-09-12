@@ -1,19 +1,18 @@
-interface RHU
-{
-
-    Macro?: RHU.Macro;
-}
-
 declare namespace RHU
 {
+    interface Modules
+    {
+        "rhu/macro": RHU.Macro;
+    }
+
     interface Macro
     {
         
-        (constructor: Function, type: string, source: string, options: RHU.Macro.Options): void;
+        <T extends RHU.Macro.Templates>(constructor: Function, type: T, source: string, options: RHU.Macro.Options): T;
         
         parseDomString(str: string): DocumentFragment;
         
-        parse(element: Element, type?: string | undefined | null, force?: boolean): void;
+        parse(element: Element, type?: string & {} | RHU.Macro.Templates | undefined | null, force?: boolean): void;
 
         observe(target: Node): void;
     }
@@ -40,6 +39,7 @@ declare namespace RHU
             prototype: T;
         }
 
+        type Templates = keyof TemplateMap;
         interface TemplateMap
         {
 
@@ -57,9 +57,9 @@ interface Node
 interface Document
 {
     
-    createMacro<T extends keyof RHU.Macro.TemplateMap>(type: T): RHU.Macro.TemplateMap[T];
+    createMacro<T extends string & keyof RHU.Macro.TemplateMap>(type: T): RHU.Macro.TemplateMap[T];
     
-    Macro(type: string, attributes: Record<string, string>): string;
+    Macro<T extends string & keyof RHU.Macro.TemplateMap>(type: T, attributes: Record<string, string>): string;
 }
 
 interface Element

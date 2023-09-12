@@ -1,5 +1,6 @@
-interface RHU
-{
-
-    eventTarget?<T extends EventTarget>(target: T): void;
+declare namespace RHU {
+    interface Modules
+    {
+        "rhu/event": <T extends EventTarget>(target: T) => void;
+    }
 }

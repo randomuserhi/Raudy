@@ -1,9 +1,3 @@
-interface RHU
-{
-
-    WebSockets?: RHU.WebSockets;
-}
-
 interface WebSocketConstructor
 {
     prototype: WebSocket;
@@ -12,6 +6,11 @@ interface WebSocketConstructor
 
 declare namespace RHU
 {
+    interface Modules
+    {
+        "rhu/websockets": RHU.WebSockets;
+    }
+
     interface WebSockets
     {
         readonly CONNECTING: 0;

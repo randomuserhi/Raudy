@@ -1,13 +1,13 @@
-interface RHU
-{
-
-    WeakRefMap?: RHU.WeakRefMapConstructor;
-
-    WeakCollection?: RHU.WeakCollectionConstructor;
-}
-
 declare namespace RHU
 {
+    interface Modules
+    {
+        "rhu/weak": {
+            WeakRefMap: RHU.WeakRefMapConstructor;
+            WeakCollection: RHU.WeakCollectionConstructor;
+        }
+    }
+
     interface WeakRefMap<K, V> extends Map<K, V>
     {
         prototype: WeakRefMap<K, V>;

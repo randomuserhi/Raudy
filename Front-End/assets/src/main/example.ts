@@ -1,30 +1,30 @@
+declare namespace RHU { 
+    interface Modules {
+        "main": void;
+    }
+    namespace Macro {
+        interface TemplateMap {
+            "test": test;
+        }
+    }
+}
+
 interface test extends HTMLUListElement
 {
     item: HTMLLIElement
 }
-interface testConstructor extends RHU.Macro.Constructor<test>
-{
-    
-}
 
-declare namespace RHU { namespace Macro {
-    interface TemplateMap
-    {
-        "test": test
-    }
-}}
-
-RHU.import(RHU.module({ trace: new Error(),
-    name: "test", hard: ["RHU.Macro"],
-    callback: function()
-    {
-        let { RHU } = window.RHU.require(window, this);
-
-        let test = function(this: test)
-        {
-            this.item.innerHTML = "Working!!!";
-        } as testConstructor;
-        RHU.Macro(test, "test", //html
+RHU.module(new Error(), "main", 
+    { Macro: "rhu/macro" },
+    function({ Macro }) {
+        Macro((() => {
+            let test = function(this: test)
+            {
+                this.item.innerHTML = "Working!!!";
+            } as RHU.Macro.Constructor<test>;
+            
+            return test;    
+        })(), "test", //html
             `
             <li rhu-id="item"></li>
             `, {
@@ -35,4 +35,4 @@ RHU.import(RHU.module({ trace: new Error(),
         let other = document.createMacro("test");
         document.body.append(other);
     }
-}));
+);

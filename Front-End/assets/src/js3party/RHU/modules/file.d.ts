@@ -1,11 +1,10 @@
-interface RHU
-{
-
-    File?: RHU.File;
-}
-
 declare namespace RHU
 {
+    interface Modules
+    {
+        "rhu/file": RHU.File;
+    }
+
     interface File
     {
         
@@ -18,14 +17,14 @@ declare namespace RHU
     {
         interface Type
         {
-            unknown: "unknown";
-            png: "png";
-            gif: "gif";
-            jpg: "jpg";
-            txt: "txt";
-            js: "text/javascript";
-            mp4: "video/mp4";
-            mkv: "video/x-matroska";
+            readonly unknown: "unknown";
+            readonly png: "png";
+            readonly gif: "gif";
+            readonly jpg: "jpg";
+            readonly txt: "txt";
+            readonly js: "text/javascript";
+            readonly mp4: "video/mp4";
+            readonly mkv: "video/x-matroska";
 
             toType(blobType: string): string;
         }
