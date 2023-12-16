@@ -1,0 +1,24 @@
+{
+  "name": "raudy-assets",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "transpile": "tsc",
+    "copy-files": "copyfiles -u 1 -e src/**/*.ts src/**/* build/",
+    "copy-js3party": "del-cli build/js3party/**/* && copyfiles -u 1 js3party/**/*.* build/js3party/",
+    "build": "del-cli build/**/* !build/js3party && npm run transpile && npm run copy-files && del-cli ../electron/build/assets/**/* !../electron/build/assets/js3party && npm run offload",
+    "offload": "copyfiles -u 1 -e build/js3party/**/* build/**/*.* ../electron/build/assets/",
+    "offload-js3party": "del-cli ../electron/build/assets/js3party/**/* && copyfiles -u 1 js3party/**/*.* ../electron/build/assets/js3party/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/randomuserhi/Raudy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "del-cli": "^5.1.0",
+    "typescript": "^5.0.4"
+  }
+}
