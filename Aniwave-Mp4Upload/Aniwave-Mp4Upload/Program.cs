@@ -1,18 +1,14 @@
-﻿using System.Net;
-using Raudy.Net;
+﻿using Raudy.Net;
+using System.Net;
 using System.Text;
-using Microsoft.VisualBasic;
 
 // Project > Properties > Change from Console Application to Windows Application when moving to production
 
-namespace Source
-{
-    internal class Program
-    {
+namespace Source {
+    internal class Program {
         static bool running = true;
 
-        static int Main(string[] args)
-        {
+        static int Main(string[] args) {
             /*if (args.Length < 2)
             {
                 Console.WriteLine("No IP or Port was given.");
@@ -73,7 +69,7 @@ namespace Source
             Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                Aniwave.Query? query = await source.Search("penguin drum");
+                Aniwave.Query? query = await source.Search("konosuba");
                 Console.WriteLine(query?.results[0].link);
 
                 Aniwave.AnimeInfo info = new Aniwave.AnimeInfo();
@@ -82,25 +78,19 @@ namespace Source
 
                 Console.WriteLine(info.thumbnail);
 
-                Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Sub);
+                Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Dub);
 
-                if (episodes != null)
-                {
+                if (episodes != null) {
                     Aniwave.EpisodeList list = episodes.Value;
-                    foreach (Aniwave.Episode ep in list.episodes)
-                    {
-                        if (ep.epNum != "9") continue;
-
+                    foreach (Aniwave.Episode ep in list.episodes) {
                         Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.enTitle}: {ep.category}");
 
                         Aniwave.SourceList? sourceList = await source.GetSources(ep);
 
-                        if (sourceList != null)
-                        {
+                        if (sourceList != null) {
                             Aniwave.SourceList slist = sourceList.Value;
 
-                            foreach (Aniwave.Source src in slist.sources)
-                            {
+                            foreach (Aniwave.Source src in slist.sources) {
                                 Console.WriteLine($"{src.name}: {src.id}");
                             }
 
@@ -119,35 +109,28 @@ namespace Source
         }
 
         // Manage connection
-        static void OnAccept(IPEndPoint endPoint)
-        {
+        static void OnAccept(IPEndPoint endPoint) {
             Console.WriteLine($"Connected: {endPoint}");
         }
 
-        static void OnReceive(IPEndPoint endPoint, int received, byte[] buffer)
-        {
-            try
-            {
+        static void OnReceive(IPEndPoint endPoint, int received, byte[] buffer) {
+            try {
                 string msg = Encoding.UTF8.GetString(buffer, 0, received);
                 string type = Net.MessageType(msg);
-                switch (type)
-                {
-                    case "HeartBeat":
-                        Console.WriteLine($"Heartbeat received");
-                        break;
-                    default:
-                        Console.WriteLine($"Received unknown message type: {type}");
-                        break;
+                switch (type) {
+                case "HeartBeat":
+                    Console.WriteLine($"Heartbeat received");
+                    break;
+                default:
+                    Console.WriteLine($"Received unknown message type: {type}");
+                    break;
                 }
-            }
-            catch(Exception ex) 
-            {
+            } catch (Exception ex) {
                 Console.WriteLine(ex);
             }
         }
 
-        static void OnDisconnect(IPEndPoint endPoint)
-        {
+        static void OnDisconnect(IPEndPoint endPoint) {
             Console.WriteLine($"Disconnected: {endPoint}");
         }
     }
