@@ -21,6 +21,12 @@ declare namespace RHUDocuscript {
             link?: string;
             onclick?: () => void;
         };
+        h1: {};
+        h2: {};
+        h3: {};
+        h4: {};
+        h5: {};
+        h6: {};
         div: {};
         frag: {};
         pl: {
@@ -38,7 +44,6 @@ declare namespace RHUDocuscript {
         icode: {
             language?: string;  
         };
-        mj: {};
         ol: {};
         ul: {};
         desmos: {
@@ -66,14 +71,18 @@ declare namespace RHUDocuscript {
         p: (...children: (string | Node)[]) => Node<"p">;
         
         h: (heading: number, label: string, ...children: (string | Node)[]) => Node<"h">;
+        h1: (label: string, ...children: (string | Node)[]) => Node<"h">;
+        h2: (label: string, ...children: (string | Node)[]) => Node<"h">;
+        h3: (label: string, ...children: (string | Node)[]) => Node<"h">;
+        h4: (label: string, ...children: (string | Node)[]) => Node<"h">;
+        h5: (label: string, ...children: (string | Node)[]) => Node<"h">;
+        h6: (label: string, ...children: (string | Node)[]) => Node<"h">;
     
         div: (...children: (string | Node)[]) => Node<"div">;
         frag: (...children: (string | Node)[]) => Node<"frag">;
 
         pl: (params: [path: string, index?: number], ...children: (string | Node)[]) => Node<"pl">;
         link: (href: string, ...children: (string | Node)[]) => Node<"link">;
-
-        mj: (...children: (string | Node)[]) => Node<"mj">;
 
         ol: (...children: (string | Node)[]) => Node<"ol">;
         ul: (...children: (string | Node)[]) => Node<"ul">;
@@ -349,23 +358,6 @@ RHU.module(new Error(), "docuscript", {
                 return dom;
             }
         },
-        mj: {
-            create: function(this: context, ...children) {
-                let node: node<"mj"> = {
-                    __type__: "mj",
-                };
-
-                mountChildrenText(this, node, children);
-
-                return node;
-            },
-            parse: function(children) {
-                const dom = document.createElement("span");
-                dom.append(...children);
-                MathJax.Hub.Queue(["Typeset", MathJax.Hub, dom]);
-                return dom;
-            }
-        },
         link: {
             create: function(this: context, href, ...children) {
                 let node: node<"link"> = {
@@ -512,6 +504,36 @@ RHU.module(new Error(), "docuscript", {
                 dom.append(...children);
                 return dom;
             }
+        },
+        h1: {
+            create: function(this: context, label, ...children) {
+                return this.nodes.h(1, label, ...children);
+            },
+        },
+        h2: {
+            create: function(this: context, label, ...children) {
+                return this.nodes.h(1, label, ...children);
+            },
+        },
+        h3: {
+            create: function(this: context, label, ...children) {
+                return this.nodes.h(1, label, ...children);
+            },
+        },
+        h4: {
+            create: function(this: context, label, ...children) {
+                return this.nodes.h(1, label, ...children);
+            },
+        },
+        h5: {
+            create: function(this: context, label, ...children) {
+                return this.nodes.h(1, label, ...children);
+            },
+        },
+        h6: {
+            create: function(this: context, label, ...children) {
+                return this.nodes.h(1, label, ...children);
+            },
         },
         h: {
             create: function(this: context, heading, label, ...children) {
