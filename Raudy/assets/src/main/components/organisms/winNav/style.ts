@@ -10,8 +10,7 @@ declare namespace RHU {
 
 RHU.module(new Error(), "components/organisms/winNav/style",
     { Style: "rhu/style", theme: "main/theme" },
-    function({ Style, theme })
-    {
+    function({ Style }) {
         const style = Style(({ style }) => {
             const wrapper = style.class`
             display: flex;
@@ -56,7 +55,7 @@ RHU.module(new Error(), "components/organisms/winNav/style",
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            `
+            `;
 
             return {
                 wrapper,

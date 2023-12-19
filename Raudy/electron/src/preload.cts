@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron"); // Import contextBridge, ipcRenderer from electron module
+import { contextBridge, ipcRenderer } from "electron";
 
 // TODO(randomuserhi): Look into https://stackoverflow.com/a/57656281/9642458 for better security
 

@@ -132,34 +132,30 @@ export declare namespace Core
     }
 }
 
-let isEventListener = function(callback: EventListenerOrEventListenerObject): callback is EventListener
-{
+const isEventListener = function(callback: EventListenerOrEventListenerObject): callback is EventListener {
     return callback instanceof Function;
-}
+};
 
-export let core: Core = {
+export const core: Core = {
     version: "1.0.0",
 
-    exists: function<T>(obj: T | undefined | null): obj is T
-    {
+    exists: function<T>(obj: T | undefined | null): obj is T {
         return obj !== null && obj !== undefined;
     },
 
-    parseOptions: function<T extends {}>(template: T, options: any | undefined | null): T
-    {
+    parseOptions: function<T extends {}>(template: T, options: any | undefined | null): T {
         if (!core.exists(options)) return template;
         if (!core.exists(template)) return template;
         
-        let result = template;
+        const result = template;
         Object.assign(result, options);
         return result;
     },
 
-    properties: function(object: any, options: Core.Properties.Options = {}, operation?: (object: any, property: PropertyKey) => void): Set<PropertyKey>
-    {
+    properties: function(object: any, options: Core.Properties.Options = {}, operation?: (object: any, property: PropertyKey) => void): Set<PropertyKey> {
         if (!core.exists(object)) throw TypeError("Cannot get properties of 'null' or 'undefined'.");
 
-        let opt: Core.Properties.Options = {
+        const opt: Core.Properties.Options = {
             enumerable: undefined,
             configurable: undefined,
             symbols: undefined,
@@ -175,14 +171,12 @@ export let core: Core = {
          *                     Can use an object {} and then do `properties[descriptor] = undefined`,
          *                     then use `for (let key in properties)` to return an array of properties.
          */
-        let properties = new Set<PropertyKey>();
-        let iterate = function
+        const properties = new Set<PropertyKey>();
+        const iterate = function
         <T extends keyof ({ [x: PropertyKey]: TypedPropertyDescriptor<any> } & { [x: PropertyKey]: PropertyDescriptor })>
-        (props: T[], descriptors: { [x: PropertyKey]: TypedPropertyDescriptor<any> } & { [x: PropertyKey]: PropertyDescriptor }): void
-        {
-            for (let p of props)
-            {
-                let descriptor = descriptors[p];
+        (props: T[], descriptors: { [x: PropertyKey]: TypedPropertyDescriptor<any> } & { [x: PropertyKey]: PropertyDescriptor }): void {
+            for (const p of props) {
+                const descriptor = descriptors[p];
                 let valid = true;
                 
                 // TODO(randomuserhi): Fairly sure these conditions are incorrect, need double checking
@@ -194,10 +188,8 @@ export let core: Core = {
                 if (opt.set === false && descriptor.set) valid = false;
                 else if (opt.set === true && !descriptor.set) valid = false;
 
-                if (valid) 
-                {
-                    if (!properties.has(p))
-                    {
+                if (valid) {
+                    if (!properties.has(p)) {
                         if (core.exists(operation)) operation(curr, p);
                         properties.add(p);
                     }
@@ -210,19 +202,16 @@ export let core: Core = {
          *                     when symbols is undefined
          */
         let curr = object;
-        do
-        {
-            let descriptors = Object.getOwnPropertyDescriptors(curr);
+        do {
+            const descriptors = Object.getOwnPropertyDescriptors(curr);
             
-            if (!core.exists(opt.symbols) || opt.symbols === false)
-            {
-                let props = Object.getOwnPropertyNames(curr);
+            if (!core.exists(opt.symbols) || opt.symbols === false) {
+                const props = Object.getOwnPropertyNames(curr);
                 iterate(props, descriptors);
             }
             
-            if (!core.exists(opt.symbols) || opt.symbols === true)
-            {
-                let props = Object.getOwnPropertySymbols(curr);
+            if (!core.exists(opt.symbols) || opt.symbols === true) {
+                const props = Object.getOwnPropertySymbols(curr);
                 iterate(props, descriptors);
             }
         } while((curr = Object.getPrototypeOf(curr)) && !opt.hasOwn);
@@ -230,19 +219,17 @@ export let core: Core = {
         return properties;
     },
 
-    defineProperty: function(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: Core.Properties.Flags): boolean
-    {
-        let opt: Core.Properties.Flags = {
+    defineProperty: function(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: Core.Properties.Flags): boolean {
+        const opt: Core.Properties.Flags = {
             replace: true,
             warn: false,
             err: false
         };
         core.parseOptions(opt, flags);
 
-        if (opt.replace || !core.properties(object, { hasOwn: true }).has(property))
-        {
+        if (opt.replace || !core.properties(object, { hasOwn: true }).has(property)) {
             delete object[property];  // NOTE(randomuserhi): Should throw an error in Strict Mode when trying to delete a property of 'configurable: false'.
-                            //                     Also will not cause issues with inherited properties as `delete` only removes own properties.    
+            //                     Also will not cause issues with inherited properties as `delete` only removes own properties.    
             Object.defineProperty(object, property, options);
             return true;
         }
@@ -250,88 +237,73 @@ export let core: Core = {
         if (opt.err) console.error(`Failed to define property '${property.toString()}', it already exists. Try 'replace: true'`);
         return false;
     },
-    definePublicProperty: function(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: Core.Properties.Flags)
-    {
-        let opt: PropertyDescriptor = {
+    definePublicProperty: function(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: Core.Properties.Flags) {
+        const opt: PropertyDescriptor = {
             writable: true,
             enumerable: true
         };
         return core.defineProperty(object, property, Object.assign(opt, options), flags);
     },
-    definePublicAccessor: function(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: Core.Properties.Flags)
-    {
-        let opt: PropertyDescriptor = {
+    definePublicAccessor: function(object: any, property: PropertyKey, options: PropertyDescriptor, flags?: Core.Properties.Flags) {
+        const opt: PropertyDescriptor = {
             configurable: true,
             enumerable: true
         };
         return core.defineProperty(object, property, Object.assign(opt, options), flags);
     },
 
-    defineProperties: function(object, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: Core.Properties.Flags)
-    {
-        for (let key of core.properties(properties, { hasOwn: true }).keys())
-        {
-            if (Object.hasOwnProperty.call(properties, key))
-            {
+    defineProperties: function(object, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: Core.Properties.Flags) {
+        for (const key of core.properties(properties, { hasOwn: true }).keys()) {
+            if (Object.hasOwnProperty.call(properties, key)) {
                 core.defineProperty(object, key, properties[key], flags);
             }
         }
     },
-    definePublicProperties: function(object, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: Core.Properties.Flags)
-    {
+    definePublicProperties: function(object, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: Core.Properties.Flags) {
         interface opt
         {
             new(): PropertyDescriptor,
             prototype: PropertyDescriptor
         }
-        let opt = function(this: PropertyDescriptor)
-        {
+        const opt = function(this: PropertyDescriptor) {
             this.configurable = true;
             this.writable = true;
             this.enumerable = true;
         } as Function as opt;
 
-        for (let key of core.properties(properties, { hasOwn: true }).keys())
-        {
-            if (Object.hasOwnProperty.call(properties, key))
-            {
-                let o = Object.assign(new opt(), properties[key]);
+        for (const key of core.properties(properties, { hasOwn: true }).keys()) {
+            if (Object.hasOwnProperty.call(properties, key)) {
+                const o = Object.assign(new opt(), properties[key]);
                 core.defineProperty(object, key, o, flags);
             }
         }
     },
-    definePublicAccessors: function(object, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: Core.Properties.Flags)
-    {
+    definePublicAccessors: function(object, properties: { [x: PropertyKey]: PropertyDescriptor }, flags?: Core.Properties.Flags) {
         interface opt
         {
             new(): PropertyDescriptor,
             prototype: PropertyDescriptor
         }
-        let opt = function(this: PropertyDescriptor)
-        {
+        const opt = function(this: PropertyDescriptor) {
             this.configurable = true;
             this.enumerable = true;
         } as Function as opt;
 
-        for (let key of core.properties(properties, { hasOwn: true }).keys())
-        {
-            if (Object.hasOwnProperty.call(properties, key))
-            {
-                let o = Object.assign(new opt(), properties[key]);
+        for (const key of core.properties(properties, { hasOwn: true }).keys()) {
+            if (Object.hasOwnProperty.call(properties, key)) {
+                const o = Object.assign(new opt(), properties[key]);
                 core.defineProperty(object, key, o, flags);
             }
         }
     },
 
-    assign: function<T>(target: T, source: any, options?: Core.Properties.Flags): T
-    {
+    assign: function<T>(target: T, source: any, options?: Core.Properties.Flags): T {
         if (target === source) return target;
         core.defineProperties(target, Object.getOwnPropertyDescriptors(source), options);
         return target;
     },
 
-    deleteProperties: function(object: any, preserve?: {}): void
-    {
+    deleteProperties: function(object: any, preserve?: {}): void {
         if (object === preserve) return;
 
         /**
@@ -350,8 +322,7 @@ export let core: Core = {
         });
     },
 
-    clone: function<T extends object>(object: any, prototype?: T) : T
-    {
+    clone: function<T extends object>(object: any, prototype?: T) : T {
         /** 
          * NOTE(randomuserhi): Performs a shallow clone => references inside the cloned object will be the same
          *                     as original.
@@ -360,21 +331,16 @@ export let core: Core = {
         else return core.assign(Object.create(Object.getPrototypeOf(object)), object);
     },
 
-    isConstructor: function(object: any): boolean
-    {
-        try 
-        {
+    isConstructor: function(object: any): boolean {
+        try {
             Reflect.construct(String, [], object);
-        } 
-        catch (e) 
-        {
+        } catch (e) {
             return false;
         }
         return true;
     },
 
-    inherit: function(child: Function, base: Function): void
-    {
+    inherit: function(child: Function, base: Function): void {
         // NOTE(randomuserhi): Cause we are using typescript, we don't need this check.
         //if (!RHU.isConstructor(child) || !RHU.isConstructor(base)) 
         //    throw new TypeError(`'child' and 'base' must be object constructors.`); 
@@ -383,22 +349,19 @@ export let core: Core = {
         Object.setPrototypeOf(child, base); // Inherit static properties
     },
 
-    reflectConstruct: function<T extends Constructor, K extends T>(base: T, name: string, constructor: (...args: any[]) => void, argnames?: string[]): Core.ReflectConstruct<T, Prototype<K>>
-    {
+    reflectConstruct: function<T extends Constructor, K extends T>(base: T, name: string, constructor: (...args: any[]) => void, argnames?: string[]): Core.ReflectConstruct<T, Prototype<K>> {
         // NOTE(randomuserhi): Cause we are using typescript, we don't need this check.
         //if (!RHU.isConstructor(base)) throw new TypeError(`'constructor' and 'base' must be object constructors.`);
 
         // Get arguments from constructor or from provided argnames
         let args = argnames;
-        if (!core.exists(args))
-        {
+        if (!core.exists(args)) {
             args = ["...args"];
 
-            let STRIP_COMMENTS = /((\/\/.*$)|(\/\*.*\*\/))/mg;
-            let funcString = constructor.toString().replace(STRIP_COMMENTS, "");
-            if (funcString.indexOf("function") === 0)
-            {
-                let s = funcString.substring("function".length).trimStart();
+            const STRIP_COMMENTS = /((\/\/.*$)|(\/\*.*\*\/))/mg;
+            const funcString = constructor.toString().replace(STRIP_COMMENTS, "");
+            if (funcString.indexOf("function") === 0) {
+                const s = funcString.substring("function".length).trimStart();
                 args = s.substring(s.indexOf("(") + 1, s.indexOf(")"))
                     .split(",")
                     .map((a) => {
@@ -414,45 +377,38 @@ export let core: Core = {
         // Create function definition with provided signature
         let definition: (Core.ReflectConstruct<T, Prototype<K>> | undefined);
 
-        let argstr = args.join(",");
+        const argstr = args.join(",");
         if (!core.exists(name))
             name = constructor.name;
         name.replace(/[ \t\r\n]/g, "");
         if (name === "") name = "__ReflectConstruct__";
-        let parts = name.split(".").filter(c => c !== "");
+        const parts = name.split(".").filter(c => c !== "");
         let evalStr = "{ let ";
-        for (let i = 0; i < parts.length - 1; ++i)
-        {
-            let part = parts[i];
+        for (let i = 0; i < parts.length - 1; ++i) {
+            const part = parts[i];
             evalStr += `${part} = {}; ${part}.`;
         }
         evalStr += `${parts[parts.length - 1]} = function(${argstr}) { return definition.__reflect__.call(this, new.target, [${argstr}]); }; definition = ${parts.join(".")} }`;
         eval(evalStr);
 
-        if (!core.exists(definition))
-        {
+        if (!core.exists(definition)) {
             console.warn("eval() call failed to create reflect constructor. Using fallback...");
-            definition = function(this: Core.ReflectConstruct<T, Prototype<K>>, ...args: any[]): unknown
-            {
+            definition = function(this: Core.ReflectConstruct<T, Prototype<K>>, ...args: any[]): unknown {
                 return definition!.__reflect__.call(this, new.target, args);
             } as Function as Core.ReflectConstruct<T, Prototype<K>>; // NOTE(randomuserhi): dodgy cast, but needs to be done so we can initially set the definition
         }
 
         // NOTE(randomuserhi): Careful with naming conflicts since JS may add __constructor__ as a standard function property
         definition.__constructor__ = constructor;
-        definition.__args__ = function(): any
-        {
+        definition.__args__ = function(): any {
             return [];
         };
-        definition.__reflect__ = function(newTarget: any, args: any[] = []) : Prototype<K> | undefined
-        {
-            if (core.exists(newTarget))
-            {
-                let obj = Reflect.construct(base, definition!.__args__(...args), definition!);
+        definition.__reflect__ = function(newTarget: any, args: any[] = []) : Prototype<K> | undefined {
+            if (core.exists(newTarget)) {
+                const obj = Reflect.construct(base, definition!.__args__(...args), definition!);
                 definition!.__constructor__.call(obj, ...args);
                 return obj;
-            }
-            else definition!.__constructor__.call(this, ...args);
+            } else definition!.__constructor__.call(this, ...args);
         };
 
         return definition; 

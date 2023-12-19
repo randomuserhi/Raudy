@@ -31,19 +31,18 @@ RHU.module(new Error(), "app", {
     });
 
     Macro((() => {
-        const app = function(this: app)
-        {
+        const app = function(this: app) {
         } as any as RHU.Macro.Constructor<app>;
         
         return app;
     })(), "app", //html
-        `
+    `
         ${winNav}
         <!-- Content goes here -->
         `, {
-            element: //html
+        element: //html
             `<div class="${theme} ${style.wrapper}"></div>`
-        });
+    });
 
     // Load app
     const app = () => {

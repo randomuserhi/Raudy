@@ -35,12 +35,11 @@ interface WeakCollectionConstructor extends Core.ReflectConstruct<WeakSetConstru
     readonly prototype: WeakCollection<object>;
 }
 
-let Map_set = Map.prototype.set;
-let Map_keys = Map.prototype.keys;
-let Map_get = Map.prototype.get;
+const Map_set = Map.prototype.set;
+const Map_keys = Map.prototype.keys;
+const Map_get = Map.prototype.get;
 
-export let WeakRefMap: WeakRefMapConstructor = core.reflectConstruct(Map, "WeakRefMap", function<K, V>(this: WeakRefMap<K, V>)
-{
+export const WeakRefMap: WeakRefMapConstructor = core.reflectConstruct(Map, "WeakRefMap", function<K, V>(this: WeakRefMap<K, V>) {
     // TODO(randomuserhi): Consider moving FinalizationRegistry to a soft dependency since this just assists
     //                     cleaning up huge amounts of divs being created, since otherwise cleanup of the
     //                     collection only occures on deletion / iteration of the collection which can
@@ -53,44 +52,37 @@ export let WeakRefMap: WeakRefMapConstructor = core.reflectConstruct(Map, "WeakR
         this.delete(key);
     });
 }) as WeakRefMapConstructor;
-WeakRefMap.prototype.set = function(key, value)
-{
+WeakRefMap.prototype.set = function(key, value) {
     this._registry.register(value, key);
     return Map_set.call(this, key, new WeakRef(value));
 };
-WeakRefMap.prototype.get = function(key)
-{
-    let raw = Map_get.call(this, key);
+WeakRefMap.prototype.get = function(key) {
+    const raw = Map_get.call(this, key);
     if (!core.exists(raw)) return undefined;
-    let value = raw.deref();
+    const value = raw.deref();
     if (!core.exists(value)) return undefined;
     return value;
 };
-WeakRefMap.prototype.values = function* ()
-{
-    for (let key of Map_keys.call(this))
-    {
-        let value = Map_get.call(this, key).deref();
+WeakRefMap.prototype.values = function* () {
+    for (const key of Map_keys.call(this)) {
+        const value = Map_get.call(this, key).deref();
         if (core.exists(value)) yield value;
         else this.delete(key);
     }
 };
-WeakRefMap.prototype[Symbol.iterator] = function* ()
-{
-    for (let key of Map_keys.call(this))
-    {
-        let value = Map_get.call(this, key).deref();
+WeakRefMap.prototype[Symbol.iterator] = function* () {
+    for (const key of Map_keys.call(this)) {
+        const value = Map_get.call(this, key).deref();
         if (core.exists(value)) yield [ key, value ];
         else this.delete(key);
     }
 };
 core.inherit(WeakRefMap, Map);
 
-let WeakSet_add = WeakSet.prototype.add;
-let WeakSet_delete = WeakSet.prototype.delete;
+const WeakSet_add = WeakSet.prototype.add;
+const WeakSet_delete = WeakSet.prototype.delete;
 
-export let WeakCollection: WeakCollectionConstructor = core.reflectConstruct(WeakSet, "WeakCollection", function<T extends object>(this: WeakCollection<T>)
-{
+export const WeakCollection: WeakCollectionConstructor = core.reflectConstruct(WeakSet, "WeakCollection", function<T extends object>(this: WeakCollection<T>) {
     this._collection = [];
     // TODO(randomuserhi): Consider moving FinalizationRegistry to a soft dependency since this just assists
     //                     cleaning up huge amounts of divs being created, since otherwise cleanup of the
@@ -106,52 +98,43 @@ export let WeakCollection: WeakCollectionConstructor = core.reflectConstruct(Wea
         });
     });
 }) as WeakCollectionConstructor;
-WeakCollection.prototype.add = function(...items)
-{
-    if (items.length === 1)
-    {
+WeakCollection.prototype.add = function(...items) {
+    if (items.length === 1) {
         this._collection.push(new WeakRef(items[0]));
         this._registry.register(items[0], undefined as any);
         return WeakSet_add.call(this, items[0]);
     }
     
-    for (let item of items)
-    {
-        if (!this.has(item))
-        {
+    for (const item of items) {
+        if (!this.has(item)) {
             this._collection.push(new WeakRef(item));
             WeakSet_add.call(this, item);
             this._registry.register(item, undefined as any);
         }
     }
 };
-WeakCollection.prototype.delete = function(...items)
-{
-    if (items.length === 1)
-    {
+WeakCollection.prototype.delete = function(...items) {
+    if (items.length === 1) {
         this._collection = this._collection.filter((ref: WeakRef<object>) => {
-            let item: object | undefined = ref.deref();
+            const item: object | undefined = ref.deref();
             return core.exists(item) && !items.includes(item); 
         });
         return WeakSet_delete.call(this, items[0]);
     }
 
-    for (let item of items)
+    for (const item of items)
         WeakSet_delete.call(this, item);
     this._collection = this._collection.filter((ref) => {
-        let item: object | undefined = ref.deref();
+        const item: object | undefined = ref.deref();
         return core.exists(item) && !items.includes(item); 
     });
 };
-WeakCollection.prototype[Symbol.iterator] = function* ()
-{
-    let collection = this._collection;
+WeakCollection.prototype[Symbol.iterator] = function* () {
+    const collection = this._collection;
     this._collection = []; 
-    for (let ref of collection)
-    {
-        let item: object | undefined = ref.deref();
-        if (core.exists(item))
-        {
+    for (const ref of collection) {
+        const item: object | undefined = ref.deref();
+        if (core.exists(item)) {
             this._collection.push(new WeakRef(item));
             yield item;
         }
@@ -159,7 +142,7 @@ WeakCollection.prototype[Symbol.iterator] = function* ()
 };
 core.inherit(WeakCollection, WeakSet);
 
-export let weak: Weak = {
+export const weak: Weak = {
     WeakRefMap: WeakRefMap,
     WeakCollection: WeakCollection
 };

@@ -14,26 +14,22 @@ declare module "./tcpClient.cjs"
 // TODO(randomuserhi): Look into https://www.electronjs.org/docs/latest/tutorial/security#csp-http-headers, instead of relying on
 //                     <meta> tags in loaded HTML
 
-export default class Program 
-{
+export default class Program {
     static win: Electron.BrowserWindow | null;
     static app: Electron.App;
 
-    private static onWindowAllClosed(): void
-    {
+    private static onWindowAllClosed(): void {
         if (process.platform !== "darwin") {
             Program.app.quit();
         }
     }
 
-    private static onClose(): void
-    {
+    private static onClose(): void {
         // Dereference the window object. 
         Program.win = null;
     }
 
-    private static onReady(): void
-    {
+    private static onReady(): void {
         Program.win = new BrowserWindow({
             frame: false, // remove the window frame
             show: false, // hide the window,
@@ -50,11 +46,11 @@ export default class Program
         Program.win.maximize();
         Program.win.show();
 
-        let client: TcpClient = new tcpClient();
+        const client: TcpClient = new tcpClient();
         client.connect("127.0.0.1", 65034);
         
         client.addEventListener("HeartBeat", (e) => {
-            let message: Message<"HeartBeat", string> = {
+            const message: Message<"HeartBeat", string> = {
                 status: "Success",
                 header: {
                     local_id: 0, // TODO(randomuserhi): generate local_id
@@ -68,8 +64,7 @@ export default class Program
         });
     }
 
-    private static setupIPC(): void
-    {
+    private static setupIPC(): void {
         ipcMain.on("closeWindow", (e) => {
             if (!Program.isTrustedFrame(e.senderFrame)) return;
             if (Program.win === null) return;
@@ -90,8 +85,7 @@ export default class Program
         });
     }
 
-    private static isTrustedFrame(frame: Electron.WebFrameMain): boolean
-    {
+    private static isTrustedFrame(frame: Electron.WebFrameMain): boolean {
         if (Program.win === null) return false;
         // NOTE(randomuserhi): This simply checks if the frame making the call is the same
         //                     as the loaded frame of the browser window.
@@ -104,14 +98,12 @@ export default class Program
     }
 
     // TODO(randomuserhi): Remove this, purely for debugging => or atleast make a proper API for it
-    static log(message: string): void
-    {
+    static log(message: string): void {
         if (Program.win === null) return;
         Program.win.webContents.executeJavaScript(`console.log(\`${message}\`);`);
     }
 
-    static main(app: Electron.App): void 
-    {
+    static main(app: Electron.App): void {
         Program.app = app;
         Program.app.on('window-all-closed', Program.onWindowAllClosed);
         Program.app.on('ready', Program.onReady);

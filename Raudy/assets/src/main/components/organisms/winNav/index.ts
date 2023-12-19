@@ -38,9 +38,9 @@ RHU.module(new Error(), "components/organisms/winNav", {
             };
         } as RHU.Macro.Constructor<Organisms.winNav>;
 
-        return winNav
+        return winNav;
     })(), "organisms/winNav", //html
-        `
+    `
         <div rhu-id="close" class="${style.button}" tabindex="-1" role="button" aria-label="Close">
             ${icons.cross}
         </div>
@@ -54,9 +54,9 @@ RHU.module(new Error(), "components/organisms/winNav", {
             Electron template window
         </div>
         `, {
-            element: //html
+        element: //html
             `<nav class="${style.wrapper}"></nav>`
-        });
+    });
 
     return winNav;
 });
