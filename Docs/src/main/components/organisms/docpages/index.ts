@@ -468,7 +468,6 @@ RHU.module(new Error(), "components/organisms/docpages", {
                 let builtPath: string[] = [];
                 for (const directory of docs.split(path)) {
                     const item = document.createElement("a");
-                    item.href = "file:///E:/Git/Enter-the-Deep/Docs/build/main/main.html?10";
                     item.innerHTML = directory;
                     
                     builtPath.push(directory);
