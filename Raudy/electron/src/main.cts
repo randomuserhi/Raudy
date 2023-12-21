@@ -1,9 +1,9 @@
 import { BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 
-import { TcpClient, tcpClient, Message } from "./tcpClient.cjs";
+import { TcpClient, Message } from "./Net/tcpClient.cjs";
 
-declare module "./tcpClient.cjs"
+declare module "./Net/tcpClient.cjs"
 {
     interface MessageEventMap
     {
@@ -46,7 +46,7 @@ export default class Program {
         Program.win.maximize();
         Program.win.show();
 
-        const client: TcpClient = new tcpClient();
+        const client: TcpClient = new TcpClient();
         client.connect("127.0.0.1", 65034);
         
         client.addEventListener("HeartBeat", (e) => {

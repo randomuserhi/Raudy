@@ -1,8 +1,10 @@
-import { core } from "./RNU/rnu.cjs";
+import { core } from "../RNU/rnu.cjs";
+import { BitHelper } from "./bitHelper.cjs";
 import * as net from "net";
 import * as os from "os";
 
 // TODO(randomuserhi): Refactor all this code...
+//                     - re write using modern js (Class structure etc...)
 
 export declare namespace Message
 {
@@ -72,32 +74,41 @@ interface _TcpClientConstructor extends TcpClientConstructor
 }
 
 const textEncoder = new TextEncoder;
-const _tcpClient: _TcpClientConstructor = function(this: _TcpClient) {
+const _TcpClient: _TcpClientConstructor = function(this: _TcpClient) {
     this._eventMap = new Map();
 } as Function as _TcpClientConstructor;
-_tcpClient.prototype.addEventListener = function(this: _TcpClient, type: string, listener: (ev: unknown) => any): void {
+_TcpClient.prototype.addEventListener = function(this: _TcpClient, type: string, listener: (ev: unknown) => any): void {
     if (!this._eventMap.has(type))
         this._eventMap.set(type, new Set<Function>());
 
     const listeners = this._eventMap.get(type)!;
     listeners.add(listener);
 };
-_tcpClient.prototype.removeEventListener = function(this: _TcpClient, type: string, listener: (ev: unknown) => any): void {
+_TcpClient.prototype.removeEventListener = function(this: _TcpClient, type: string, listener: (ev: unknown) => any): void {
     const listeners = this._eventMap.get(type);
     if (core.exists(listeners))
         listeners.delete(listener);
 };
-_tcpClient.prototype.dispatchEvent = function(this: _TcpClient, type: string, ev: unknown): void {
+_TcpClient.prototype.dispatchEvent = function(this: _TcpClient, type: string, ev: unknown): void {
     const listeners = this._eventMap.get(type);
     if (core.exists(listeners))
         for (const listener of listeners)
             listener.call(this, ev);
 };
-_tcpClient.prototype.connect = function(this: _TcpClient, ip: string, port: number, connectionListener: () => void | undefined): void {
+_TcpClient.prototype.connect = function(this: _TcpClient, ip: string, port: number, connectionListener: () => void | undefined): void {
     if (core.exists(this._socket))
         this._socket.destroy();
 
     this._socket = new net.Socket;
+    this._socket.on('error', (error) => {
+        // TODO(randomuserhi): Proper error handling
+        console.log(error);
+    });
+    this._socket.on("connect", () => {
+        // TODO(randomuserhi): Proper connection handling
+        console.log("connected");
+    });
+
     this._socket.connect(port, ip, connectionListener);
 
     const headerSize: number = 4;
@@ -182,7 +193,7 @@ _tcpClient.prototype.connect = function(this: _TcpClient, ip: string, port: numb
         }
     });
 };
-_tcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient, message: T): void {
+_TcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient, message: T): void {
     if (!core.exists(this._socket))
         throw new Error("Socket is null");
 
@@ -208,4 +219,4 @@ _tcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient,
     this._socket.write(buffer);
 };
 
-export const tcpClient: TcpClientConstructor = _tcpClient;
+export const TcpClient: TcpClientConstructor = _TcpClient;

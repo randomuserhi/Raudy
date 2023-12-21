@@ -69,7 +69,7 @@ namespace Source {
             Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                Aniwave.Query? query = await source.Search("konosuba");
+                Aniwave.Query? query = await source.Search("blue lock");
                 Console.WriteLine(query?.results[0].link);
 
                 Aniwave.AnimeInfo info = new Aniwave.AnimeInfo();
