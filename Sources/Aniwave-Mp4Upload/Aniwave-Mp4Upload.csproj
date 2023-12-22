@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <StartupObject>Source.Program</StartupObject>
     <Platforms>AnyCPU;x64;x86</Platforms>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>

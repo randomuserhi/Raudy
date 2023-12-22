@@ -64,12 +64,16 @@ public partial class Aniwave : IDisposable {
                         Anime anime = new Anime();
                         anime.id = document.GetElementById("watch-main")!.GetAttribute("data-id")!;
                         anime.link = url;
-                        anime.enTitle = infoEl.QuerySelector(".info>.title")!.InnerHtml;
-                        anime.jpTitle = infoEl.QuerySelector(".info>.title")!.GetAttribute("data-jp")!;
-                        anime.alternativeTitles = infoEl.QuerySelector(".info>.names")!.InnerHtml.Split(";");
-                        for (int i = 0; i < anime.alternativeTitles.Length; ++i) {
-                            anime.alternativeTitles[i] = anime.alternativeTitles[i].Trim();
+                        // TODO(randomuserhi) => Check compatability with chinese titles (data-jp may be missing)
+                        List<PackedString> titles = new List<PackedString> {
+                            new PackedString(infoEl.QuerySelector(".info>.title")!.InnerHtml, "language=en; primary"),
+                            new PackedString(infoEl.QuerySelector(".info>.title")!.GetAttribute("data-jp")!, "language=jp; primary")
+                        };
+                        string[] alternativeTitles = infoEl.QuerySelector(".info>.names")!.InnerHtml.Split(";");
+                        for (int i = 0; i < alternativeTitles.Length; ++i) {
+                            titles.Add(new PackedString(alternativeTitles[i].Trim()));
                         }
+                        anime.titles = titles.ToArray();
                         anime.thumbnail = infoEl.QuerySelector("img")!.GetAttribute("src")!;
                         anime.description = infoEl.QuerySelector(".content")!.InnerHtml;
 
@@ -86,9 +90,91 @@ public partial class Aniwave : IDisposable {
         }
     }
 
+    public async Task<Query?> Search(string keyword) {
+        string url = $"{baseUrl}/ajax/anime/search?keyword={keyword}";
+        try {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+                url);
+            request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
+
+            using (HttpResponseMessage res = await client.SendAsync(request)) {
+                if (res.IsSuccessStatusCode) {
+                    using (HttpContent content = res.Content) {
+                        Query query = new Query();
+                        query.filter = new Filter();
+                        query.filter.keyword = keyword;
+                        List<AnimeInfo> results = new List<AnimeInfo>();
+
+                        string data = await content.ReadAsStringAsync();
+                        Response<WebpageSnippet> resp = JsonConvert.DeserializeObject<Response<WebpageSnippet>>(data);
+
+                        IHtmlDocument dom = parser.ParseDocument(string.Empty);
+                        INodeList nodes = parser.ParseFragment(resp.result.html, dom.Body!);
+                        foreach (IElement el in nodes.QuerySelectorAll(".item")) {
+                            AnimeInfo anime = new AnimeInfo();
+
+                            anime.link = UrlUtilities.Combine(baseUrl, el.GetAttribute("href")!);
+                            anime.thumbnail = el.QuerySelector("img")!.GetAttribute("src")!.Replace("-w100", "");
+
+                            // TODO(randomuserhi) => Check compatability with chinese titles (data-jp may be missing)
+                            anime.titles = new PackedString[] {
+                                new PackedString(el.QuerySelector(".d-title")!.InnerHtml, "language=en; primary"),
+                                new PackedString(el.QuerySelector(".d-title")!.GetAttribute("data-jp")!, "language=jp; primary")
+                            };
+
+                            results.Add(anime);
+                        }
+
+                        query.results = results.ToArray();
+                        return query;
+                    }
+                }
+            }
+
+            return null;
+        } catch (Exception exception) {
+            Console.WriteLine($"Error trying to obtain search query: {url}");
+            Console.WriteLine(exception);
+            return null;
+        }
+    }
+
+    // TODO(randomuserhi): Add various filter properties
+    public async Task<Anime[]?> TestFilter(string keyword) {
+        string url = $"{baseUrl}/ajax/anime/filter?sort=recently_updated&keyword={keyword}&page=1";
+
+        // NOTE(randomuserhi): These 3 are shorthand for filters url => E.g for "completed" => /ajax/anime/filter?status%5B%5D=completed
+        //string url = $"{baseUrl}/ajax/anime/newest?page=1";
+        //string url = $"{baseUrl}/ajax/anime/added?page=1";
+        //string url = $"{baseUrl}/ajax/anime/completed?page=1";
+
+        // NOTE(randomuserhi): These 3 are shorthand for filters url as well!
+        //string url = $"{baseUrl}/ajax/home/widget/updated-dub?page=1";
+        //string url = $"{baseUrl}/ajax/home/widget/updated-sub?page=1";
+        //string url = $"{baseUrl}/ajax/home/widget/updated-all?page=1";
+        try {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+                url);
+            request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
+
+            using (HttpResponseMessage res = await client.SendAsync(request)) {
+                if (res.IsSuccessStatusCode) {
+                    using (HttpContent content = res.Content) {
+                        // TODO(randomuserhi) => seems like im parsing an entire HTML document :pensive:
+                    }
+                }
+            }
+
+            return null;
+        } catch (Exception exception) {
+            Console.WriteLine($"Error trying to obtain search query: {url}");
+            Console.WriteLine(exception);
+            return null;
+        }
+    }
+
     public async Task<EpisodeList?> GetEpisodes(Anime anime, Category categories) {
         string url = $"{baseUrl}/ajax/episode/list/{anime.id}?vrf={Decoder.GetVrf(anime.id)}";
-        Console.WriteLine(url);
         try {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
                url);
@@ -118,8 +204,11 @@ public partial class Aniwave : IDisposable {
                             ep.category = category;
                             IElement? title = li.QuerySelector(".d-title");
                             if (title != null) {
-                                ep.enTitle = title.InnerHtml;
-                                ep.jpTitle = title.GetAttribute("data-jp")!;
+                                // TODO(randomuserhi) => Check compatability with chinese titles (data-jp may be missing)
+                                ep.titles = new PackedString[] {
+                                    new PackedString(title.InnerHtml, "language=en; primary"),
+                                    new PackedString(title.GetAttribute("data-jp")!, "language=jp; primary")
+                                };
                             }
 
                             episodes.Add(ep);
@@ -174,51 +263,6 @@ public partial class Aniwave : IDisposable {
             return null;
         } catch (Exception exception) {
             Console.WriteLine($"Error trying to obtain episode: {url}");
-            Console.WriteLine(exception);
-            return null;
-        }
-    }
-
-    public async Task<Query?> Search(string keyword) {
-        string url = $"{baseUrl}/ajax/anime/search?keyword={keyword}";
-        try {
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                url);
-            request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
-
-            using (HttpResponseMessage res = await client.SendAsync(request)) {
-                if (res.IsSuccessStatusCode) {
-                    using (HttpContent content = res.Content) {
-                        Query query = new Query();
-                        query.filter = new Filter();
-                        query.filter.keyword = keyword;
-                        List<AnimeInfo> results = new List<AnimeInfo>();
-
-                        string data = await content.ReadAsStringAsync();
-                        Response<WebpageSnippet> resp = JsonConvert.DeserializeObject<Response<WebpageSnippet>>(data);
-
-                        IHtmlDocument dom = parser.ParseDocument(string.Empty);
-                        INodeList nodes = parser.ParseFragment(resp.result.html, dom.Body!);
-                        foreach (IElement el in nodes.QuerySelectorAll(".item")) {
-                            AnimeInfo anime = new AnimeInfo();
-
-                            anime.link = UrlUtilities.Combine(baseUrl, el.GetAttribute("href")!);
-                            anime.thumbnail = el.QuerySelector("img")!.GetAttribute("src")!;
-                            anime.enTitle = el.QuerySelector(".d-title")!.InnerHtml;
-                            anime.jpTitle = el.QuerySelector(".d-title")!.GetAttribute("data-jp")!;
-
-                            results.Add(anime);
-                        }
-
-                        query.results = results.ToArray();
-                        return query;
-                    }
-                }
-            }
-
-            return null;
-        } catch (Exception exception) {
-            Console.WriteLine($"Error trying to obtain search query: {url}");
             Console.WriteLine(exception);
             return null;
         }

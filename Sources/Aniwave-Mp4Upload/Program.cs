@@ -72,18 +72,20 @@ namespace Source {
                 Aniwave.Query? query = await source.Search("blue lock");
                 Console.WriteLine(query?.results[0].link);
 
-                Aniwave.AnimeInfo info = new Aniwave.AnimeInfo();
-                info.link = query?.results[0].link!;
+                Aniwave.AnimeInfo info = query!.Value.results[0];
                 Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
 
-                Console.WriteLine(info.thumbnail);
+                Console.WriteLine($"thumbnail: {info.thumbnail}");
+                Console.WriteLine($"full-thumbnail: {anime!.Value.thumbnail}");
+                Console.WriteLine($"title: {anime!.Value.titles[0].value}");
+                Console.WriteLine($"description: {anime!.Value.description}");
 
                 Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Dub);
 
-                if (episodes != null) {
+                /*if (episodes != null) {
                     Aniwave.EpisodeList list = episodes.Value;
                     foreach (Aniwave.Episode ep in list.episodes) {
-                        Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.enTitle}: {ep.category}");
+                        Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
 
                         Aniwave.SourceList? sourceList = await source.GetSources(ep);
 
@@ -97,10 +99,10 @@ namespace Source {
                             Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
                             Console.WriteLine(embed?.url);
                             Console.WriteLine(embed?.video?.url);
-                            await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.enTitle}");
+                            await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.titles[0]}");
                         }
                     }
-                }
+                }*/
             });
 
             Console.ReadLine();

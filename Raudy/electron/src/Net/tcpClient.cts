@@ -20,8 +20,8 @@ export interface UnknownMessage
         remote_id: number,
         type: string
     };
-    result: unknown;
-    messages: string[];
+    content: unknown;
+    tags: string[];
 }
 
 export interface Message<T extends string & keyof MessageEventMap, K = unknown> extends UnknownMessage
@@ -31,7 +31,7 @@ export interface Message<T extends string & keyof MessageEventMap, K = unknown> 
         remote_id: number,
         type: T
     };
-    result: K;
+    content: K;
 }
 
 export interface MessageEvent<T extends UnknownMessage>
@@ -200,6 +200,7 @@ _TcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient,
     const body: Uint8Array = textEncoder.encode(JSON.stringify(message));
 
     const buffer = new Uint8Array(4 + body.byteLength);
+    // Write message length to buffer
     if (os.endianness() === "LE") {
         buffer[0] = (body.byteLength&0xff000000)>>24;
         buffer[1] = (body.byteLength&0x00ff0000)>>16;
@@ -212,6 +213,7 @@ _TcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient,
         buffer[0] = (body.byteLength&0x000000ff)>>0;
     }
 
+    // Write message to buffer
     for (let i = 0; i < body.byteLength; ++i) {
         buffer[i + 4] = body[i];
     }

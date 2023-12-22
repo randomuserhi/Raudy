@@ -57,8 +57,8 @@ export default class Program {
                     remote_id: e.message.header.local_id,
                     type: "HeartBeat"
                 },
-                result: "",
-                messages: []
+                content: "",
+                tags: []
             };
             client.send(message);
         });
