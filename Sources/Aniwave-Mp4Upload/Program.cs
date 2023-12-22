@@ -88,7 +88,6 @@ namespace Source {
 
                 Console.WriteLine($"link: {anime!.Value.link}");
                 Console.WriteLine($"thumbnail: {info.thumbnail}");
-                Console.WriteLine($"full-thumbnail: {anime!.Value.thumbnail}");
                 Console.WriteLine($"title: {anime!.Value.titles[0].value}");
                 Console.WriteLine($"description: {anime!.Value.description}");
 
