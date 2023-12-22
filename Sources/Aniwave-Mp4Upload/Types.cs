@@ -1,6 +1,7 @@
 ﻿public partial class Aniwave {
     [Flags]
     public enum Category {
+        None = 0,
         Sub = 0b0001,
         Dub = 0b0010,
         SSub = 0b0100, // Soft-Sub (subtitles included in video metadata)
@@ -47,6 +48,7 @@
         public string thumbnail;
         public PackedString[] titles;
         public string description;
+        public Category categories;
 
         // release date?
         // completed?

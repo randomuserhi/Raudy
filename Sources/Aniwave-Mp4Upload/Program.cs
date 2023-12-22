@@ -69,12 +69,24 @@ namespace Source {
             Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                Aniwave.Query? query = await source.Search("blue lock");
+                Aniwave.Anime[] test = await source.Search("test");
+                foreach (Aniwave.Anime a in test) {
+                    Console.WriteLine("------------------------------");
+                    Console.WriteLine($"link: {a.link}");
+                    Console.WriteLine($"thumbnail: {a.thumbnail}");
+                    Console.WriteLine($"title: {a.titles[0].value}");
+                    Console.WriteLine($"description: {a.description}");
+                }
+                Console.WriteLine("--- END ---");
+
+
+                Aniwave.Query? query = await source.ShortSearch("blue lock");
                 Console.WriteLine(query?.results[0].link);
 
                 Aniwave.AnimeInfo info = query!.Value.results[0];
                 Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
 
+                Console.WriteLine($"link: {anime!.Value.link}");
                 Console.WriteLine($"thumbnail: {info.thumbnail}");
                 Console.WriteLine($"full-thumbnail: {anime!.Value.thumbnail}");
                 Console.WriteLine($"title: {anime!.Value.titles[0].value}");

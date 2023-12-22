@@ -5,7 +5,6 @@ using Newtonsoft.Json;
 using Raudy.Url;
 
 // TODO(randomuserhi): Better exception handling => need to write to a log file etc...
-// TODO(randomuserhi): A method to get information from aniwave filter => e.g latest, newest etc...
 
 public partial class Aniwave : IDisposable {
     private const string domain = "aniwave.to";
@@ -76,6 +75,7 @@ public partial class Aniwave : IDisposable {
                         anime.titles = titles.ToArray();
                         anime.thumbnail = infoEl.QuerySelector("img")!.GetAttribute("src")!;
                         anime.description = infoEl.QuerySelector(".content")!.InnerHtml;
+                        anime.categories = Category.None;
 
                         return anime;
                     }
@@ -90,7 +90,7 @@ public partial class Aniwave : IDisposable {
         }
     }
 
-    public async Task<Query?> Search(string keyword) {
+    public async Task<Query?> ShortSearch(string keyword) {
         string url = $"{baseUrl}/ajax/anime/search?keyword={keyword}";
         try {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
@@ -140,18 +140,19 @@ public partial class Aniwave : IDisposable {
     }
 
     // TODO(randomuserhi): Add various filter properties
-    public async Task<Anime[]?> TestFilter(string keyword) {
-        string url = $"{baseUrl}/ajax/anime/filter?sort=recently_updated&keyword={keyword}&page=1";
+    public async Task<Anime[]> Search(string keyword, int page = 1) {
+        string url = $"{baseUrl}/filter?sort=recently_updated&keyword={keyword}&page={page}";
 
         // NOTE(randomuserhi): These 3 are shorthand for filters url => E.g for "completed" => /ajax/anime/filter?status%5B%5D=completed
-        //string url = $"{baseUrl}/ajax/anime/newest?page=1";
-        //string url = $"{baseUrl}/ajax/anime/added?page=1";
-        //string url = $"{baseUrl}/ajax/anime/completed?page=1";
+        //string url = $"{baseUrl}/newest?page=1";
+        //string url = $"{baseUrl}/added?page=1";
+        //string url = $"{baseUrl}/completed?page=1";
 
         // NOTE(randomuserhi): These 3 are shorthand for filters url as well!
         //string url = $"{baseUrl}/ajax/home/widget/updated-dub?page=1";
         //string url = $"{baseUrl}/ajax/home/widget/updated-sub?page=1";
         //string url = $"{baseUrl}/ajax/home/widget/updated-all?page=1";
+        List<Anime> results = new List<Anime>();
         try {
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
                 url);
@@ -160,14 +161,96 @@ public partial class Aniwave : IDisposable {
             using (HttpResponseMessage res = await client.SendAsync(request)) {
                 if (res.IsSuccessStatusCode) {
                     using (HttpContent content = res.Content) {
-                        // TODO(randomuserhi) => seems like im parsing an entire HTML document :pensive:
+                        string data = await content.ReadAsStringAsync();
+                        Response<string> response = JsonConvert.DeserializeObject<Response<string>>(data);
+                        IHtmlDocument dom = parser.ParseDocument(response.result);
+
+                        IElement list = dom.GetElementById("list-items")!;
+                        foreach (IElement item in list.QuerySelectorAll(".item")) {
+                            IElement poster = item.QuerySelector(".ani.poster.tip")!;
+                            //string tooltipID = poster.GetAttribute("data-tip")!;
+                            //Anime anime = (await GetTooltip(tooltipID)).Value;
+                            Anime anime = new Anime();
+
+                            IElement info = item.QuerySelector(".name.d-title")!;
+                            anime.link = $"{baseUrl}{info.GetAttribute("href")!}";
+
+                            anime.titles = new PackedString[] {
+                                new PackedString(info.InnerHtml, "language=en; primary"),
+                                new PackedString(info.GetAttribute("data-jp")!, "language=jp; primary")
+                            };
+
+                            anime.thumbnail = item.QuerySelector("img")!.GetAttribute("src")!;
+
+                            anime.categories = Category.None;
+                            if (item.QuerySelectorAll(".ep-status.sub").Length == 1) {
+                                anime.categories |= Category.Sub;
+                            } else if (item.QuerySelectorAll(".ep-status.dub").Length == 1) {
+                                anime.categories |= Category.Dub;
+                            }
+
+                            results.Add(anime);
+                        }
+                    }
+                }
+            }
+        } catch (Exception exception) {
+            Console.WriteLine($"Error trying to obtain filter query: {url}");
+            Console.WriteLine(exception);
+        }
+
+        return results.ToArray();
+    }
+
+    // NOTE(randomuserhi): Special case for aniwave tooltip for additional information about animes
+    public async Task<Anime?> GetTooltip(string id) {
+        string url = $"{baseUrl}/ajax/anime/tooltip/{id}";
+
+        try {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+                url);
+            request.Headers.Add("Accept", "application/json, text/javascript, */*; q=0.01");
+
+            using (HttpResponseMessage res = await client.SendAsync(request)) {
+                if (res.IsSuccessStatusCode) {
+                    using (HttpContent content = res.Content) {
+                        string data = await content.ReadAsStringAsync();
+                        IHtmlDocument dom = parser.ParseDocument(string.Empty);
+                        INodeList nodes = parser.ParseFragment(data, dom.Body!);
+
+                        Anime anime = new Anime();
+
+                        IElement titleEl = nodes.QuerySelector(".title.d-title")!;
+                        // TODO(randomuserhi) => Check compatability with chinese titles (data-jp may be missing)
+                        List<PackedString> titles = new List<PackedString>() {
+                            new PackedString(titleEl.InnerHtml, "language=en; primary"),
+                            new PackedString(titleEl.GetAttribute("data-jp")!, "language=jp; primary")
+                        };
+                        string[] otherTitles = nodes.QuerySelector(".meta-bl")!.ChildNodes[1].ChildNodes[1].TextContent.Split(";");
+                        foreach (string title in otherTitles) {
+                            titles.Add(new PackedString(title.Trim()));
+                        }
+                        anime.titles = titles.ToArray();
+                        anime.description = nodes.QuerySelector(".synopsis")!.InnerHtml;
+                        anime.id = nodes.QuerySelector(".favourite.dropup")!.GetAttribute("data-id")!;
+                        anime.link = $"{baseUrl}{nodes.QuerySelector(".watch")!.GetAttribute("href")!}";
+                        anime.categories = Category.None;
+                        if (nodes.QuerySelectorAll(".ep-status.sub").Length == 1) {
+                            anime.categories |= Category.Sub;
+                        } else if (nodes.QuerySelectorAll(".ep-status.dub").Length == 1) {
+                            anime.categories |= Category.Dub;
+                        }
+
+                        // No thumbnail
+
+                        return anime;
                     }
                 }
             }
 
             return null;
         } catch (Exception exception) {
-            Console.WriteLine($"Error trying to obtain search query: {url}");
+            Console.WriteLine($"Error trying to obtaining tooltip: {url}");
             Console.WriteLine(exception);
             return null;
         }
