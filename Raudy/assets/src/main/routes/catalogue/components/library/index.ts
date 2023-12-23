@@ -32,11 +32,15 @@ RHU.module(new Error(), "routes/catalogue/library", {
         <div>
             <!-- search -->
             <div></div>
-            <!-- filters -->
+            <!-- filters TODO(randomuserhi): Add option to search across all categories -->
             <div></div>
         </div>
-        <!-- results -->
+        <!-- library categories -->
         <div>
+        </div>
+        <!-- results -->
+        <div class="${style.grid}">
+            <div></div>
         </div>
         `, {
         element: //html
