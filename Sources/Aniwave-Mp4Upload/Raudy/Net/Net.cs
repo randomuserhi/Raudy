@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Net;
 using System.Text;
 
 namespace Raudy.Net {
@@ -21,6 +22,11 @@ namespace Raudy.Net {
     }
 
     public static class Net {
+        public delegate void onConnect(EndPoint endpoint);
+        public delegate void onAccept(EndPoint endpoint);
+        public delegate void onReceive(int bytesReceived, EndPoint endpoint);
+        public delegate void onDisconnect(EndPoint endpoint);
+
         private static int local_id = 0;
         private static JsonSerializerSettings jsonSettings = new JsonSerializerSettings {
             NullValueHandling = NullValueHandling.Ignore

@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Deep {
+namespace Raudy {
     internal static partial class BitHelper {
         // https://github.com/dotnet/runtime/blob/20c8ae6457caa652a34fc42ff5f92b6728231039/src/libraries/System.Private.CoreLib/src/System/Buffers/Binary/Reader.cs
 
@@ -131,7 +131,7 @@ namespace Deep {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void WriteBytes(byte[] buffer, byte[] destination, ref int index) {
-            WriteBytes((ushort)buffer.Length, destination, ref index);
+            WriteBytes(buffer.Length, destination, ref index);
             Array.Copy(buffer, 0, destination, index, buffer.Length);
             index += buffer.Length;
         }
