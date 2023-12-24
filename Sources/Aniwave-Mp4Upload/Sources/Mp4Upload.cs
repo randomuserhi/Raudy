@@ -18,58 +18,6 @@ public partial class Aniwave {
             client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
         }
 
-        public async Task DownloadPanopto(string url, string fileName) {
-            try {
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                    url);
-                request.Headers.Add("Host", "durham.cloud.panopto.eu");
-                request.Headers.Add("Origin", "durham.cloud.panopto.eu");
-                request.Headers.Add("Accept", "*/*");
-                request.Headers.Add("Range", "bytes=0-");
-
-                // NOTE(randomuserhi): HttpCompletionOption.ResponseHeadersRead is needed to ensure only the response header is read
-                //                     Since otherwise it downloads the entire mp4 content from mp4upload causin sendasync to hang forever
-                //                     until the mp4 completes downloading then writes to file.
-                //
-                //                     Once the response header is read, we read the mp4 bytes as it is being downloaded and write them to a file
-                //                     https://www.stevejgordon.co.uk/using-httpcompletionoption-responseheadersread-to-improve-httpclient-performance-dotnet
-                //                     
-                //                     We can create a progress bar using the response header Content-Length property
-                using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
-                    Console.WriteLine(res.IsSuccessStatusCode);
-                    if (res.IsSuccessStatusCode) {
-                        using (HttpContent content = res.Content) {
-                            HttpHeaders headers = content.Headers;
-                            IEnumerable<string>? values;
-                            float contentLength;
-                            if (headers.TryGetValues("Content-Length", out values)) {
-                                contentLength = int.Parse(values.First());
-                                Console.WriteLine(contentLength);
-                            } else throw new Exception("No 'Content-Length' header");
-
-                            Stream data = await content.ReadAsStreamAsync();
-                            FileStream writer = new FileStream($"F:/Anime/Angel Next Door/{fileName}.mp4", FileMode.Create);
-                            byte[] buffer = new byte[16 * 1024];
-                            float total = 0;
-                            int read;
-                            while ((read = data.Read(buffer, 0, buffer.Length)) > 0) {
-                                writer.Write(buffer, 0, read);
-                                total += read;
-                                Console.WriteLine(total / contentLength);
-                            }
-                            writer.Dispose();
-                        }
-                    }
-                }
-
-                return;
-            } catch (Exception exception) {
-                Console.WriteLine("Error trying to download episode:");
-                Console.WriteLine(exception);
-                return;
-            }
-        }
-
         // TODO(randomuserhi): Cleanup or write proper API / design => This is test code to check if I can spoof Host and Origin to get file from mp4upload
         public async Task DownloadVideo(string url, string fileName) {
             try {
@@ -95,9 +43,8 @@ public partial class Aniwave {
                     if (res.IsSuccessStatusCode) {
                         using (HttpContent content = res.Content) {
                             HttpHeaders headers = content.Headers;
-                            IEnumerable<string>? values;
                             float contentLength;
-                            if (headers.TryGetValues("Content-Length", out values)) {
+                            if (headers.TryGetValues("Content-Length", out IEnumerable<string>? values)) {
                                 contentLength = int.Parse(values.First());
                                 Console.WriteLine(contentLength);
                             } else throw new Exception("No 'Content-Length' header");
