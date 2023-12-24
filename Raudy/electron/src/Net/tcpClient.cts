@@ -21,7 +21,7 @@ export interface UnknownMessage
         type: string
     };
     content: unknown;
-    tags: string[];
+    tags: string;
 }
 
 export interface Message<T extends string & keyof MessageEventMap, K = unknown> extends UnknownMessage
@@ -140,7 +140,7 @@ _TcpClient.prototype.connect = function(this: _TcpClient, ip: string, port: numb
                     slice += read;
                     read = 0;
 
-                    if (os.endianness() === "LE") {
+                    if (os.endianness() !== "LE") {
                         msgSize = (recvBuffer[0] << 24) |
                                 (recvBuffer[1] << 16) |
                                 (recvBuffer[2] << 8)  |
@@ -201,7 +201,7 @@ _TcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient,
 
     const buffer = new Uint8Array(4 + body.byteLength);
     // Write message length to buffer
-    if (os.endianness() === "LE") {
+    if (os.endianness() !== "LE") {
         buffer[0] = (body.byteLength&0xff000000)>>24;
         buffer[1] = (body.byteLength&0x00ff0000)>>16;
         buffer[2] = (body.byteLength&0x0000ff00)>>8;

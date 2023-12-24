@@ -47,9 +47,10 @@ export default class Program {
         Program.win.show();
 
         const client: TcpClient = new TcpClient();
-        client.connect("127.0.0.1", 65034);
+        client.connect("127.0.0.1", 56759);
         
         client.addEventListener("HeartBeat", (e) => {
+            console.log("heartbeat received!");
             const message: Message<"HeartBeat", string> = {
                 status: "Success",
                 header: {
@@ -58,7 +59,7 @@ export default class Program {
                     type: "HeartBeat"
                 },
                 content: "",
-                tags: []
+                tags: ""
             };
             client.send(message);
         });

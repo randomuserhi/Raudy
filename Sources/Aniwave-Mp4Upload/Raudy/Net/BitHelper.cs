@@ -121,19 +121,19 @@ namespace Raudy {
             _WriteBytes((byte*)&to32, sizeof(int), destination, ref index);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // NOTE(randomuserhi): UTF8 encoding
         public static unsafe void WriteBytes(string value, ArraySegment<byte> destination, ref int index) {
             byte[] temp = Encoding.UTF8.GetBytes(value);
-            WriteBytes((ushort)temp.Length, destination, ref index);
+            WriteBytes(temp.Length, destination, ref index);
             Array.Copy(temp, 0, destination.Array!, destination.Offset + index, temp.Length);
             index += temp.Length;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteBytes(byte[] buffer, ArraySegment<byte> destination, ref int index) {
-            WriteBytes((ushort)buffer.Length, destination, ref index);
-            Array.Copy(buffer, 0, destination.Array!, destination.Offset + index, buffer.Length);
-            index += buffer.Length;
+        public static unsafe void WriteBytes(ArraySegment<byte> buffer, ArraySegment<byte> destination, ref int index) {
+            WriteBytes(buffer.Count, destination, ref index);
+            Array.Copy(buffer.Array!, buffer.Offset, destination.Array!, destination.Offset + index, buffer.Count);
+            index += buffer.Count;
         }
 
         public const int SizeOfHalf = sizeof(ushort);
@@ -174,14 +174,14 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte ReadByte(byte[] source, ref int index) {
+        public static byte ReadByte(ArraySegment<byte> source, ref int index) {
             return source[index++];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ulong ReadULong(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe ulong ReadULong(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(ulong);
 
                 ulong result = *(ulong*)ptr;
@@ -193,9 +193,9 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe long ReadLong(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe long ReadLong(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(long);
 
                 long result = *(long*)ptr;
@@ -207,9 +207,9 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe uint ReadUInt(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe uint ReadUInt(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(uint);
 
                 uint result = *(uint*)ptr;
@@ -221,9 +221,9 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe int ReadInt(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe int ReadInt(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(int);
 
                 int result = *(int*)ptr;
@@ -235,9 +235,9 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe ushort ReadUShort(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe ushort ReadUShort(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(ushort);
 
                 ushort result = *(ushort*)ptr;
@@ -249,9 +249,9 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe short ReadShort(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe short ReadShort(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(short);
 
                 short result = *(short*)(ptr);
@@ -263,14 +263,14 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float ReadHalf(byte[] source, ref int index) {
+        public static float ReadHalf(ArraySegment<byte> source, ref int index) {
             return HalfToFloat(ReadUShort(source, ref index));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe float ReadFloat(byte[] source, ref int index) {
-            fixed (byte* converted = source) {
-                byte* ptr = converted + index;
+        public static unsafe float ReadFloat(ArraySegment<byte> source, ref int index) {
+            fixed (byte* converted = source.Array!) {
+                byte* ptr = converted + source.Offset + index;
                 index += sizeof(float);
 
                 if (!BitConverter.IsLittleEndian) {
@@ -282,17 +282,17 @@ namespace Raudy {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string ReadUTF8String(byte[] source, ref int index) {
-            int length = ReadUShort(source, ref index);
-            string temp = Encoding.UTF8.GetString(source, index, length);
+        public static string ReadUTF8String(ArraySegment<byte> source, ref int index) {
+            int length = ReadInt(source, ref index);
+            string temp = Encoding.UTF8.GetString(source.Array!, source.Offset + index, length);
             index += length;
             return temp;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string ReadASCIIString(byte[] source, ref int index) {
-            int length = ReadUShort(source, ref index);
-            string temp = Encoding.ASCII.GetString(source, index, length);
+        public static string ReadASCIIString(ArraySegment<byte> source, ref int index) {
+            int length = ReadInt(source, ref index);
+            string temp = Encoding.ASCII.GetString(source.Array!, source.Offset + index, length);
             index += length;
             return temp;
         }

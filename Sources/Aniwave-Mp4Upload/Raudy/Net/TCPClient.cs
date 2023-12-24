@@ -38,7 +38,7 @@ namespace Raudy.Net {
                 int receivedBytes = await socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
                 EndPoint remoteEP = socket.RemoteEndPoint!;
                 if (receivedBytes > 0) {
-                    onReceive?.Invoke(receivedBytes, remoteEP);
+                    onReceive?.Invoke(new ArraySegment<byte>(buffer.Array!, buffer.Offset, receivedBytes), remoteEP);
                     _ = Listen(); // Start new listen task => async loop
                 } else {
                     Dispose();

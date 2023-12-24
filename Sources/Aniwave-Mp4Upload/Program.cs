@@ -31,7 +31,7 @@ namespace Source {
             }*/
 
             // Boot Server
-            /*TCPServer server = new TCPServer(1024);
+            TCPServer server = new TCPServer(1024);
             server.onReceive += OnReceive;
             server.onAccept += OnAccept;
             server.onDisconnect += OnDisconnect;
@@ -40,22 +40,20 @@ namespace Source {
             //                     Have a timeout flag => if its 0, then dont auto-close
             //                     otherwise close after timeout.
 
-            server.Open();
             //server.Bind(new IPEndPoint(address, port));
-            server.Bind(new IPEndPoint(IPAddress.Any, 65034));
+            IPEndPoint bind = (IPEndPoint)server.Bind(new IPEndPoint(IPAddress.Any, 56759));
+            Console.WriteLine(bind.Port);
 
-            Task execution = Task.Run(async void () =>
-            {
+            Task execution = Task.Run(async void () => {
                 const int tickRate = 1000 / 20;
 
-                while (running)
-                {
-                    foreach (IPEndPoint ep in server.connections)
-                    {
+                while (running) {
+                    foreach (EndPoint ep in server.Connections) {
+                        //Console.WriteLine($"Heartbeat sent");
                         Message<string> heartBeat = Net.NewMessage<string>("HeartBeat");
                         heartBeat.status = Status.SUCCESS;
-                        heartBeat.result = "";
-                        await server.SendTo(ep, Net.SerializeMessage(heartBeat));
+                        heartBeat.content = "";
+                        await server.SendTo(Net.SerializeMessage(heartBeat), ep);
                     }
 
                     Thread.Sleep(tickRate);
@@ -63,10 +61,10 @@ namespace Source {
             });
             execution.Wait();
 
-            server.Dispose();*/
+            server.Dispose();
 
 
-            Aniwave source = new Aniwave();
+            /*Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
                 Aniwave.Anime[] test = await source.Search("test");
@@ -93,7 +91,7 @@ namespace Source {
 
                 Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Dub);
 
-                /*if (episodes != null) {
+                if (episodes != null) {
                     Aniwave.EpisodeList list = episodes.Value;
                     foreach (Aniwave.Episode ep in list.episodes) {
                         Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
@@ -113,8 +111,8 @@ namespace Source {
                             await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.titles[0]}");
                         }
                     }
-                }*/
-            });
+                }
+            });*/
 
             Console.ReadLine();
 
@@ -122,13 +120,13 @@ namespace Source {
         }
 
         // Manage connection
-        static void OnAccept(IPEndPoint endPoint) {
+        static void OnAccept(EndPoint endPoint) {
             Console.WriteLine($"Connected: {endPoint}");
         }
 
-        static void OnReceive(IPEndPoint endPoint, int received, byte[] buffer) {
+        static void OnReceive(ArraySegment<byte> buffer, EndPoint endPoint) {
             try {
-                string msg = Encoding.UTF8.GetString(buffer, 0, received);
+                string msg = Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count);
                 string type = Net.MessageType(msg);
                 switch (type) {
                 case "HeartBeat":
@@ -143,7 +141,7 @@ namespace Source {
             }
         }
 
-        static void OnDisconnect(IPEndPoint endPoint) {
+        static void OnDisconnect(EndPoint endPoint) {
             Console.WriteLine($"Disconnected: {endPoint}");
         }
     }
