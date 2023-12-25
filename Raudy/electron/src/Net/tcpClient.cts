@@ -1,10 +1,6 @@
 import { core } from "../RNU/rnu.cjs";
-import { BitHelper } from "./bitHelper.cjs";
 import * as net from "net";
 import * as os from "os";
-
-// TODO(randomuserhi): Refactor all this code...
-//                     - re write using modern js (Class structure etc...)
 
 export declare namespace Message
 {
@@ -43,6 +39,97 @@ export interface MessageEventMap
 
 }
 
+export class TcpClient {
+    private static textEncoder = new TextEncoder();
+
+    private socket: net.Socket | null;
+    private eventMap: Map<string, Set<Function>>;
+
+    constructor() {
+        this.eventMap = new Map();
+    }
+    
+    public addEventListener<T extends keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: MessageEventMap[T]) => any): void;
+    public addEventListener(type: string, listener: (ev: unknown) => any): void {
+        if (!this.eventMap.has(type)) {
+            this.eventMap.set(type, new Set<Function>());
+        }
+        
+        const listeners = this.eventMap.get(type)!;
+        listeners.add(listener);
+    }
+    public removeEventListener<T extends keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: MessageEventMap[T]) => any): void;
+    public removeEventListener(type: string, listener: (ev: unknown) => any): void {
+        const listeners = this.eventMap.get(type);
+        if (core.exists(listeners)) {
+            listeners.delete(listener);
+        }
+    }
+    public dispatchEvent<T extends keyof MessageEventMap>(type: T, ev: MessageEventMap[T]): void;
+    public dispatchEvent(type: string, ev: unknown): void {
+        const listeners = this.eventMap.get(type);
+        if (core.exists(listeners)) {
+            for (const listener of listeners) {
+                listener.call(this, ev);
+            }
+        }
+    }
+
+    public async send<T extends UnknownMessage>(message: T) {
+        if (!core.exists(this.socket))
+            throw new Error("Socket is null");
+        
+        const body: Uint8Array = TcpClient.textEncoder.encode(JSON.stringify(message));
+        
+        const buffer = new Uint8Array(4 + body.byteLength);
+        // Write message length to buffer
+        if (os.endianness() !== "LE") {
+            buffer[0] = (body.byteLength&0xff000000)>>24;
+            buffer[1] = (body.byteLength&0x00ff0000)>>16;
+            buffer[2] = (body.byteLength&0x0000ff00)>>8;
+            buffer[3] = (body.byteLength&0x000000ff)>>0;
+        } else {
+            buffer[3] = (body.byteLength&0xff000000)>>24;
+            buffer[2] = (body.byteLength&0x00ff0000)>>16;
+            buffer[1] = (body.byteLength&0x0000ff00)>>8;
+            buffer[0] = (body.byteLength&0x000000ff)>>0;
+        }
+        
+        // Write message to buffer
+        for (let i = 0; i < body.byteLength; ++i) {
+            buffer[i + 4] = body[i];
+        }
+        
+        const socket = this.socket;
+        return new Promise<void>((resolve, reject) => {
+            socket.write(buffer, (error) => core.exists(error) ? reject(error) : resolve());
+        });
+    }
+
+    public async connect(ip: string, port: number) {
+        if (core.exists(this.socket))
+            this.socket.destroy();
+        const socket = this.socket = new net.Socket();
+
+        socket.on("data", (buffer) => {
+            // TODO(randomuserhi)
+        });
+
+        return new Promise<void>((resolve, reject) => {
+            const errListener = (error: Error) => {
+                socket.off("error", errListener);
+                reject(error);
+            };
+            socket.on("error", errListener);
+            socket.connect(port, ip, () => resolve());
+        });
+    }
+}
+
+// TODO(randomuserhi): Refactor all this code...
+//                     - re write using modern js (Class structure etc...)
+
+/*
 export interface TcpClient
 {
     connect(ip: string, port: number, connectionListener?: () => void): void;
@@ -99,7 +186,7 @@ _TcpClient.prototype.connect = function(this: _TcpClient, ip: string, port: numb
     if (core.exists(this._socket))
         this._socket.destroy();
 
-    this._socket = new net.Socket;
+    this._socket = new net.Socket();
     this._socket.on('error', (error) => {
         // TODO(randomuserhi): Proper error handling
         console.log(error);
@@ -221,4 +308,4 @@ _TcpClient.prototype.send = function<T extends UnknownMessage>(this: _TcpClient,
     this._socket.write(buffer);
 };
 
-export const TcpClient: TcpClientConstructor = _TcpClient;
+export const TcpClient: TcpClientConstructor = _TcpClient;*/
