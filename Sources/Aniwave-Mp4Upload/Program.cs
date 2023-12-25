@@ -124,7 +124,8 @@ namespace Source {
             Console.WriteLine($"Connected: {endPoint}");
         }
 
-        static void OnReceive(ArraySegment<byte> buffer, EndPoint endPoint) {
+        static void OnReceive
+            (ArraySegment<byte> buffer, EndPoint endPoint) {
             try {
                 string msg = Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count);
                 string type = Net.MessageType(msg);
