@@ -39,6 +39,8 @@ export interface MessageEventMap
 
 }
 
+// TODO(randomuserhi): Fix method overloading not working
+
 export class TcpClient {
     private static textEncoder = new TextEncoder();
 
@@ -48,9 +50,9 @@ export class TcpClient {
     constructor() {
         this.eventMap = new Map();
     }
-    
+
     public addEventListener<T extends keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: MessageEventMap[T]) => any): void;
-    public addEventListener(type: string, listener: (ev: unknown) => any): void {
+    public addEventListener(type: string, listener: (ev: unknown) => any) {
         if (!this.eventMap.has(type)) {
             this.eventMap.set(type, new Set<Function>());
         }
@@ -58,15 +60,17 @@ export class TcpClient {
         const listeners = this.eventMap.get(type)!;
         listeners.add(listener);
     }
+    
     public removeEventListener<T extends keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: MessageEventMap[T]) => any): void;
-    public removeEventListener(type: string, listener: (ev: unknown) => any): void {
+    public removeEventListener(type: string, listener: (ev: unknown) => any) {
         const listeners = this.eventMap.get(type);
         if (core.exists(listeners)) {
             listeners.delete(listener);
         }
     }
+
     public dispatchEvent<T extends keyof MessageEventMap>(type: T, ev: MessageEventMap[T]): void;
-    public dispatchEvent(type: string, ev: unknown): void {
+    public dispatchEvent(type: string, ev: unknown) {
         const listeners = this.eventMap.get(type);
         if (core.exists(listeners)) {
             for (const listener of listeners) {
@@ -111,8 +115,86 @@ export class TcpClient {
             this.socket.destroy();
         const socket = this.socket = new net.Socket();
 
-        socket.on("data", (buffer) => {
-            // TODO(randomuserhi)
+        const headerSize: number = 4;
+        let read: number = 0;
+        let state: number = 0;
+        let msgSize: number;
+        let recvBuffer: Uint8Array = new Uint8Array(1024);
+        socket.on("data", (buffer: Buffer): void => {
+            if (socket === null)
+                return;
+
+            let slice: number = 0;
+            while (slice < socket.bytesRead) {
+                switch(state) {
+                case 0:
+                    // State 0 => Looking for message header
+
+                    if (recvBuffer.byteLength < headerSize)
+                        recvBuffer = new Uint8Array(headerSize);
+
+                    if (read < headerSize) {
+                        // Read message header from buffer
+                        for (let i = 0; i < headerSize && i < socket.bytesRead; ++i, ++read) {
+                            recvBuffer[read] = buffer[slice + i];
+                        }
+                    } else {
+                        // Decode message header and transition to next state when applicable
+
+                        slice += read;
+                        read = 0;
+
+                        if (os.endianness() !== "LE") {
+                            msgSize = (recvBuffer[0] << 24) |
+                                    (recvBuffer[1] << 16) |
+                                    (recvBuffer[2] << 8)  |
+                                    (recvBuffer[3] << 0);
+                        } else {
+                            msgSize = (recvBuffer[0] << 0)  |
+                                    (recvBuffer[1] << 8)  |
+                                    (recvBuffer[2] << 16) |
+                                    (recvBuffer[3] << 24);
+                        }
+                        if (msgSize === 0) return; // no more messages in buffer => exit
+
+                        // transition to next state
+                        state = 1;
+                    }
+                    break;
+                case 1:
+                    // State 1 => Reading message based on message header
+
+                    if (recvBuffer.byteLength < msgSize)
+                        recvBuffer = new Uint8Array(msgSize);
+
+                    if (read < msgSize) {
+                        // Read message from buffer
+                        for (let i = 0; i < msgSize && i < socket.bytesRead; ++i, ++read) {
+                            recvBuffer[read] = buffer[slice + i];
+                        }
+                    } else {
+                        // Decode message and trigger "message" event
+
+                        slice += read;
+                        read = 0;
+
+                        let msg = "";
+                        for (let i = 0; i < msgSize; ++i) {
+                            msg += String.fromCharCode(recvBuffer[i]);
+                        }
+                        
+                        const message: UnknownMessage = JSON.parse(msg);
+                        const event: MessageEvent<UnknownMessage> = {
+                            message: message
+                        };
+                        this.dispatchEvent(message.header.type, event);
+
+                        // Transition back to state 0
+                        state = 0;
+                    }
+                    break;
+                }
+            }
         });
 
         return new Promise<void>((resolve, reject) => {
