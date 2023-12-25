@@ -39,8 +39,6 @@ export interface MessageEventMap
 
 }
 
-// TODO(randomuserhi): Fix method overloading not working
-
 export class TcpClient {
     private static textEncoder = new TextEncoder();
 
@@ -51,8 +49,7 @@ export class TcpClient {
         this.eventMap = new Map();
     }
 
-    public addEventListener<T extends keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: MessageEventMap[T]) => any): void;
-    public addEventListener(type: string, listener: (ev: unknown) => any) {
+    public addEventListener<T extends (string & {}) | keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: T extends keyof MessageEventMap ? MessageEventMap[T] : any) => any) {
         if (!this.eventMap.has(type)) {
             this.eventMap.set(type, new Set<Function>());
         }
@@ -61,16 +58,14 @@ export class TcpClient {
         listeners.add(listener);
     }
     
-    public removeEventListener<T extends keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: MessageEventMap[T]) => any): void;
-    public removeEventListener(type: string, listener: (ev: unknown) => any) {
+    public removeEventListener<T extends (string & {}) | keyof MessageEventMap>(type: T, listener: (this: TcpClient, ev: T extends keyof MessageEventMap ? MessageEventMap[T] : any) => any) {
         const listeners = this.eventMap.get(type);
         if (core.exists(listeners)) {
             listeners.delete(listener);
         }
     }
 
-    public dispatchEvent<T extends keyof MessageEventMap>(type: T, ev: MessageEventMap[T]): void;
-    public dispatchEvent(type: string, ev: unknown) {
+    public dispatchEvent<T extends (string & {}) | keyof MessageEventMap>(type: T, ev: T extends keyof MessageEventMap ? MessageEventMap[T] : any) {
         const listeners = this.eventMap.get(type);
         if (core.exists(listeners)) {
             for (const listener of listeners) {
