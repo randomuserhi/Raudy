@@ -30,6 +30,7 @@ namespace Source {
                 return 1;
             }*/
 
+            /*
             // Boot Server
             TCPServer server = new TCPServer(1024);
             server.onReceive += OnReceive;
@@ -61,13 +62,13 @@ namespace Source {
             });
             execution.Wait();
 
-            server.Dispose();
+            server.Dispose();*/
 
 
-            /*Aniwave source = new Aniwave();
+            Aniwave source = new Aniwave();
 
             Task.Run(async void () => {
-                Aniwave.Anime[] test = await source.Search("test");
+                /*Aniwave.Anime[] test = await source.Search("test");
                 foreach (Aniwave.Anime a in test) {
                     Console.WriteLine("------------------------------");
                     Console.WriteLine($"link: {a.link}");
@@ -75,21 +76,22 @@ namespace Source {
                     Console.WriteLine($"title: {a.titles[0].value}");
                     Console.WriteLine($"description: {a.description}");
                 }
-                Console.WriteLine("--- END ---");
+                Console.WriteLine("--- END ---");*/
 
 
-                Aniwave.Query? query = await source.ShortSearch("blue lock");
-                Console.WriteLine(query?.results[0].link);
+                //Aniwave.Query? query = await source.ShortSearch("Kono suba");
+                //Console.WriteLine(query?.results[0].link);
 
-                Aniwave.AnimeInfo info = query!.Value.results[0];
-                Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
+                //Aniwave.AnimeInfo info = query!.Value.results[0];
+                //Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
+                Aniwave.Anime? anime = await source.GetFullAnimeDetails("https://aniwave.to/watch/konosuba-gods-blessing-on-this-wonderful-world.l33");
 
                 Console.WriteLine($"link: {anime!.Value.link}");
-                Console.WriteLine($"thumbnail: {info.thumbnail}");
+                Console.WriteLine($"thumbnail: {anime!.Value.thumbnail}");
                 Console.WriteLine($"title: {anime!.Value.titles[0].value}");
                 Console.WriteLine($"description: {anime!.Value.description}");
 
-                Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Dub);
+                Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Sub);
 
                 if (episodes != null) {
                     Aniwave.EpisodeList list = episodes.Value;
@@ -108,11 +110,11 @@ namespace Source {
                             Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
                             Console.WriteLine(embed?.url);
                             Console.WriteLine(embed?.video?.url);
-                            await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.titles[0]}");
+                            await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.titles[0].ToString()}");
                         }
                     }
                 }
-            });*/
+            });
 
             Console.ReadLine();
 

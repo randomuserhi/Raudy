@@ -269,6 +269,7 @@ public partial class Aniwave : IDisposable {
                     using (HttpContent content = res.Content) {
                         string data = await content.ReadAsStringAsync();
                         Response<string> resp = JsonConvert.DeserializeObject<Response<string>>(data);
+                        File.WriteAllText(@"F:Test.html", resp.result);
 
                         IHtmlDocument dom = parser.ParseDocument(string.Empty);
                         INodeList nodes = parser.ParseFragment(resp.result, dom.Body!);
@@ -317,23 +318,22 @@ public partial class Aniwave : IDisposable {
                                     parseEpisode(li, a, ids[0], category);
                                 }
                             } else if (ids.Length == 2) {
-                                // If there are 2, assume first is sub, and second is dub
-                                for (int i = 0; i < ids.Length; ++i) {
-                                    Category category = i == 1 ? Category.Dub : Category.Sub;
-
-                                    if (categories.HasFlag(category)) {
-                                        parseEpisode(li, a, ids[i], category);
-                                    }
+                                // If there are 2, check for dub
+                                // If dub is available, first is sub, second is dub
+                                // Otherwise first is sub and second is soft sub
+                                string dub = a.GetAttribute("data-dub")!;
+                                if (dub == "1") {
+                                    parseEpisode(li, a, ids[0], Category.Sub);
+                                    parseEpisode(li, a, ids[1], Category.Dub);
+                                } else {
+                                    parseEpisode(li, a, ids[0], Category.Sub);
+                                    parseEpisode(li, a, ids[1], Category.SSub);
                                 }
                             } else if (ids.Length == 3) {
-                                // If there are 3, it means soft sub is available, skip soft sub, assuming the first is sub, second is soft sub and third is soft dub
-                                for (int i = 0; i < 3; i += 2) {
-                                    Category category = i == 2 ? Category.Dub : Category.Sub;
-
-                                    if (categories.HasFlag(category)) {
-                                        parseEpisode(li, a, ids[i], category);
-                                    }
-                                }
+                                // If there are 3, then sub, soft sub and dub are available
+                                parseEpisode(li, a, ids[0], Category.Sub);
+                                parseEpisode(li, a, ids[1], Category.SSub);
+                                parseEpisode(li, a, ids[2], Category.Dub);
                             }
                         }
 

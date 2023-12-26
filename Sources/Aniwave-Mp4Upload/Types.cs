@@ -29,6 +29,10 @@
             this.value = value;
             this.meta = meta;
         }
+
+        public override string ToString() {
+            return value;
+        }
     }
 
     public struct WebpageSnippet {

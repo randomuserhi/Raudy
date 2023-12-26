@@ -50,7 +50,7 @@ public partial class Aniwave {
                             } else throw new Exception("No 'Content-Length' header");
 
                             Stream data = await content.ReadAsStreamAsync();
-                            FileStream writer = new FileStream($"F:/Anime/Angel Next Door/{fileName}.mp4", FileMode.Create);
+                            FileStream writer = new FileStream($"F:/Anime/Konosuba Season 1/Sub/{fileName}.mp4", FileMode.Create);
                             byte[] buffer = new byte[16 * 1024];
                             float total = 0;
                             int read;
