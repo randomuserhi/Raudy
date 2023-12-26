@@ -112,7 +112,7 @@ export class TcpClient {
 
         const headerSize: number = 4;
         let read: number = 0;
-        let state: number = 0;
+        let state: "waiting" | "reading" = "waiting";
         let msgSize: number;
         let recvBuffer: Uint8Array = new Uint8Array(1024);
         socket.on("data", (buffer: Buffer): void => {
@@ -122,8 +122,8 @@ export class TcpClient {
             let slice: number = 0;
             while (slice < socket.bytesRead) {
                 switch(state) {
-                case 0:
-                    // State 0 => Looking for message header
+                case "waiting":
+                    // Waiting for message header
 
                     if (recvBuffer.byteLength < headerSize)
                         recvBuffer = new Uint8Array(headerSize);
@@ -150,14 +150,13 @@ export class TcpClient {
                                     (recvBuffer[2] << 16) |
                                     (recvBuffer[3] << 24);
                         }
-                        if (msgSize === 0) return; // no more messages in buffer => exit
-
-                        // transition to next state
-                        state = 1;
+                        if (msgSize > 0) { // Transition to reading state when there is a message
+                            state = "reading";
+                        }
                     }
                     break;
-                case 1:
-                    // State 1 => Reading message based on message header
+                case "reading":
+                    // Reading message
 
                     if (recvBuffer.byteLength < msgSize)
                         recvBuffer = new Uint8Array(msgSize);
@@ -184,8 +183,7 @@ export class TcpClient {
                         };
                         this.dispatchEvent(message.header.type, event);
 
-                        // Transition back to state 0
-                        state = 0;
+                        state = "waiting";
                     }
                     break;
                 }

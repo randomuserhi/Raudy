@@ -67,7 +67,7 @@ namespace Source {
 
             Aniwave source = new Aniwave();
 
-            Task.Run(async void () => {
+            Task.Run(async Task? () => {
                 /*Aniwave.Anime[] test = await source.Search("test");
                 foreach (Aniwave.Anime a in test) {
                     Console.WriteLine("------------------------------");
@@ -114,9 +114,7 @@ namespace Source {
                         }
                     }
                 }
-            });
-
-            Console.ReadLine();
+            }).Wait();
 
             return 0;
         }
@@ -126,8 +124,7 @@ namespace Source {
             Console.WriteLine($"Connected: {endPoint}");
         }
 
-        static void OnReceive
-            (ArraySegment<byte> buffer, EndPoint endPoint) {
+        static void OnReceive(ArraySegment<byte> buffer, EndPoint endPoint) {
             try {
                 string msg = Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count);
                 string type = Net.MessageType(msg);
