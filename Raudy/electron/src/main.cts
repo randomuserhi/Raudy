@@ -33,7 +33,7 @@ export default class Program {
         Program.win = new BrowserWindow({
             frame: false, // remove the window frame
             show: false, // hide the window,
-            backgroundColor: "rgba(0, 0, 0, 0)", // always set a bg color to enable font antialiasing
+            backgroundColor: "#fff", // always set a bg color to enable font antialiasing
             webPreferences: {
                 nodeIntegration: false, // is default value after Electron v5 - is disabled as per security (https://www.electronjs.org/docs/latest/tutorial/security)
                 contextIsolation: true, // protect against prototype pollution - (https://www.electronjs.org/docs/latest/tutorial/context-isolation)
@@ -43,7 +43,7 @@ export default class Program {
         Program.win.on('closed', Program.onClose);
         Program.win.loadFile(path.join(__dirname, "assets/main/main.html")); // load the main page
         
-        Program.win.maximize();
+        //Program.win.maximize();
         Program.win.show();
 
         const client: TcpClient = new TcpClient();

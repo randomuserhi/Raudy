@@ -105,6 +105,12 @@ export class TcpClient {
         });
     }
 
+    public disconnect() {
+        if (core.exists(this.socket))
+            this.socket.destroy();
+        this.socket = null;
+    }
+
     public async connect(ip: string, port: number) {
         if (core.exists(this.socket))
             this.socket.destroy();
