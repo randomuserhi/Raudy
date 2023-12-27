@@ -20,10 +20,11 @@ RHU.module(new Error(), "routes/catalogue", {
     Macro: "rhu/macro", style: "routes/catalogue/style",
     navigation: "routes/catalogue/navigation",
     library: "routes/catalogue/library",
+    shelf: "routes/catalogue/shelf",
 }, function({ 
     Macro, style,
     navigation,
-    library,
+    shelf,
 }) {
     const catalogue = Macro((() => {
         const catalogue = function(this: Routes.catalogue) {
@@ -34,7 +35,7 @@ RHU.module(new Error(), "routes/catalogue", {
     `
         ${navigation}
         <div rhu-id="body" class="${style.body}">
-            ${library}
+            ${shelf}
         </div>
         `, {
         element: //html

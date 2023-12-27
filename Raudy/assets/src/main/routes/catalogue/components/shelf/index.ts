@@ -1,22 +1,22 @@
 declare namespace RHU {
     interface Modules {
-        "routes/catalogue/library": Macro.Template<"routes/catalogue/library">;
+        "routes/catalogue/shelf": Macro.Template<"routes/catalogue/shelf">;
     }
 
     namespace Macro {
         interface TemplateMap {
-            "routes/catalogue/library": Routes.Catalogue.library;
+            "routes/catalogue/shelf": Routes.Catalogue.shelf;
         }
     }
 }
 
 declare namespace Routes.Catalogue {
-    interface library extends HTMLDivElement {
+    interface shelf extends HTMLDivElement {
     }
 }
 
-RHU.module(new Error(), "routes/catalogue/library", { 
-    Macro: "rhu/macro", style: "routes/catalogue/library/style"
+RHU.module(new Error(), "routes/catalogue/shelf", { 
+    Macro: "rhu/macro", style: "routes/catalogue/shelf/style"
 }, function({ 
     Macro, style
 }) {
@@ -25,20 +25,11 @@ RHU.module(new Error(), "routes/catalogue/library", {
         } as RHU.Macro.Constructor<Routes.Catalogue.library>;
 
         return library;
-    })(), "routes/catalogue/library", //html
+    })(), "routes/catalogue/shelf", //html
     `
         <!-- title -->
         <div>Library</div>
-        <div>
-            <!-- search -->
-            <div></div>
-            <!-- filters TODO(randomuserhi): Add option to search across all categories -->
-            <div></div>
-        </div>
-        <!-- library categories -->
-        <div>
-        </div>
-        <!-- grid -->
+        <!-- results -->
         <div class="${style.grid}">
             <div></div>
         </div>
