@@ -295,7 +295,9 @@ public partial class Aniwave : IDisposable {
                                 };
                             }
 
-                            episodes.Add(ep);
+                            if (categories.HasFlag(category)) {
+                                episodes.Add(ep);
+                            }
                         };
 
                         foreach (IElement li in nodes.QuerySelectorAll("li")) {
@@ -314,9 +316,7 @@ public partial class Aniwave : IDisposable {
                                 if (sub == "0" && dub == "1")
                                     category = Category.Dub;
 
-                                if (categories.HasFlag(category)) {
-                                    parseEpisode(li, a, ids[0], category);
-                                }
+                                parseEpisode(li, a, ids[0], category);
                             } else if (ids.Length == 2) {
                                 // If there are 2, check for dub
                                 // If dub is available, first is sub, second is dub

@@ -11,6 +11,10 @@ RHU.module(new Error(), "routes/catalogue/shelf/item/style",
     function({ Style }) {
         const style = Style(({ style }) => {
             const wrapper = style.class`
+            width: 100%;
+            height: 300px;
+            border-radius: 2px;
+            background-color: #000;
             `;
 
             return {

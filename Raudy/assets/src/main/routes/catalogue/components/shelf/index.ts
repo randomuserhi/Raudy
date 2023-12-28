@@ -32,7 +32,12 @@ RHU.module(new Error(), "routes/catalogue/shelf", {
         <!-- title -->
         <div>Shelf</div>
         <!-- results -->
+        <!-- NOTE(randomuserhi): Maybe convert grid to a global-component as "shelf" + "library" use this grid sub-component --> 
         <div class="${style.grid}">
+            ${item}
+            ${item}
+            ${item}
+            ${item}
             ${item}
         </div>
         `, {

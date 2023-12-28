@@ -96,6 +96,10 @@ namespace Source {
                 if (episodes != null) {
                     Aniwave.EpisodeList list = episodes.Value;
                     foreach (Aniwave.Episode ep in list.episodes) {
+                        if (ep.epNum == "1" || ep.epNum == "2") {
+                            Console.WriteLine("Skipped.");
+                            continue;
+                        }
                         Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
 
                         Aniwave.SourceList? sourceList = await source.GetSources(ep);

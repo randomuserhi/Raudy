@@ -31,6 +31,8 @@ interface app extends HTMLElement {
     }) {
         const style = Style(({ style }) => {
             const wrapper = style.class`
+                font-family: roboto-regular;
+
                 width: 100%;
                 height: 100%;
                 display: flex;
