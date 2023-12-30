@@ -55,7 +55,7 @@ RHU.module(new Error(), "components/organisms/winNav/style",
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             `;
 
             return {

@@ -51,7 +51,7 @@ RHU.module(new Error(), "components/organisms/winNav", {
             ${icons.line}
         </div>
         <div class="${style.text}">
-            Electron template window
+            Raudy
         </div>
         `, {
         element: //html

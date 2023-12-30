@@ -84,7 +84,7 @@ namespace Source {
 
                 //Aniwave.AnimeInfo info = query!.Value.results[0];
                 //Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
-                Aniwave.Anime? anime = await source.GetFullAnimeDetails("https://aniwave.to/watch/konosuba-gods-blessing-on-this-wonderful-world.l33");
+                Aniwave.Anime? anime = await source.GetFullAnimeDetails("https://aniwave.to/watch/konosuba-gods-blessing-on-this-wonderful-world-2.5zrm");
 
                 Console.WriteLine($"link: {anime!.Value.link}");
                 Console.WriteLine($"thumbnail: {anime!.Value.thumbnail}");
@@ -96,10 +96,6 @@ namespace Source {
                 if (episodes != null) {
                     Aniwave.EpisodeList list = episodes.Value;
                     foreach (Aniwave.Episode ep in list.episodes) {
-                        if (ep.epNum == "1" || ep.epNum == "2") {
-                            Console.WriteLine("Skipped.");
-                            continue;
-                        }
                         Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
 
                         Aniwave.SourceList? sourceList = await source.GetSources(ep);

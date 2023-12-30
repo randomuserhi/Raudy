@@ -51,7 +51,7 @@ public partial class Aniwave {
 
                             Stream data = await content.ReadAsStreamAsync();
                             // NOTE(randomuserhi): Allow reading for other applications to read a partially downloaded video
-                            FileStream writer = new FileStream($"F:/Anime/Konosuba Season 1/Sub/{fileName}.mp4", FileMode.Create, FileAccess.Write, FileShare.Read);
+                            FileStream writer = new FileStream($"F:/Anime/Konosuba Season 2/Sub/{fileName}.mp4", FileMode.Create, FileAccess.Write, FileShare.Read);
                             byte[] buffer = new byte[16 * 1024];
                             float total = 0;
                             int read;

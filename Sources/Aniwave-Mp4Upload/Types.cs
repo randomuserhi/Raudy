@@ -72,7 +72,7 @@
         public Category category;
         public PackedString[] titles;
         public string id;
-        public string epNum;
+        public int epNum;
 
         // release date?
     }

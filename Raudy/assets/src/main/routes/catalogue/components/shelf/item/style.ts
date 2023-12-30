@@ -12,7 +12,7 @@ RHU.module(new Error(), "routes/catalogue/shelf/item/style",
         const style = Style(({ style }) => {
             const wrapper = style.class`
             width: 100%;
-            height: 300px;
+            aspect-ratio: 2/3;
             border-radius: 2px;
             background-color: #000;
             `;

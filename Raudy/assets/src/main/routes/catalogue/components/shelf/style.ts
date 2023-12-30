@@ -22,7 +22,7 @@ RHU.module(new Error(), "routes/catalogue/shelf/style",
             display: grid;
             padding: 0.5rem;
             grid-gap: 0.5rem;
-            grid-template-columns: repeat(auto-fill, var(--item-width)); /* minmax(var(--item-width), 1fr) */
+            grid-template-columns: repeat(auto-fill, minmax(var(--item-width), 1fr));
             `;
 
             return {

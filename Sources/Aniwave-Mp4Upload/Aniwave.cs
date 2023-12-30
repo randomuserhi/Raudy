@@ -284,7 +284,7 @@ public partial class Aniwave : IDisposable {
 
                             ep.anime = anime;
                             ep.id = id;
-                            ep.epNum = a.GetAttribute("data-num")!;
+                            ep.epNum = int.Parse(a.GetAttribute("data-num")!);
                             ep.category = category;
                             IElement? title = li.QuerySelector(".d-title");
                             if (title != null) {
