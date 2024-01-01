@@ -1,8 +1,8 @@
-﻿using Raudy.Net;
+﻿// Project > Properties > Change from Console Application to Windows Application when moving to production
+
+using Raudy.Net;
 using System.Net;
 using System.Text;
-
-// Project > Properties > Change from Console Application to Windows Application when moving to production
 
 namespace Source {
     internal class Program {
@@ -84,33 +84,38 @@ namespace Source {
 
                 //Aniwave.AnimeInfo info = query!.Value.results[0];
                 //Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
-                Aniwave.Anime? anime = await source.GetFullAnimeDetails("https://aniwave.to/watch/konosuba-gods-blessing-on-this-wonderful-world-2.5zrm");
 
-                Console.WriteLine($"link: {anime!.Value.link}");
-                Console.WriteLine($"thumbnail: {anime!.Value.thumbnail}");
-                Console.WriteLine($"title: {anime!.Value.titles[0].value}");
-                Console.WriteLine($"description: {anime!.Value.description}");
+                string[][] jobs = new string[][] {
+                    new string[] { "https://aniwave.to/watch/kono-subarashii-sekai-ni-bakuen-wo.yqkyp/ep-1", "F:/Anime/Konosuba Megamin/Sub/" }
+                };
 
-                Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Sub);
+                foreach (string[] job in jobs) {
+                    string link = job[0];
+                    string path = job[1];
+                    Aniwave.Anime? anime = await source.GetFullAnimeDetails(link);
 
-                if (episodes != null) {
-                    Aniwave.EpisodeList list = episodes.Value;
-                    foreach (Aniwave.Episode ep in list.episodes) {
-                        Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
+                    Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Sub);
 
-                        Aniwave.SourceList? sourceList = await source.GetSources(ep);
+                    if (episodes != null) {
+                        Aniwave.EpisodeList list = episodes.Value;
+                        foreach (Aniwave.Episode ep in list.episodes) {
+                            Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
 
-                        if (sourceList != null) {
-                            Aniwave.SourceList slist = sourceList.Value;
+                            Aniwave.SourceList? sourceList = await source.GetSources(ep);
 
-                            foreach (Aniwave.Source src in slist.sources) {
-                                Console.WriteLine($"{src.name}: {src.id}");
+                            if (sourceList != null) {
+                                Aniwave.SourceList slist = sourceList.Value;
+
+                                foreach (Aniwave.Source src in slist.sources) {
+                                    Console.WriteLine($"{src.name}: {src.id}");
+                                }
+
+                                Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
+                                Console.WriteLine(embed?.url);
+                                Console.WriteLine(embed?.video?.url);
+                                string filename = $"{ep.epNum} - {ep.titles[0]}.mp4";
+                                await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, Path.Join(path, filename));
                             }
-
-                            Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
-                            Console.WriteLine(embed?.url);
-                            Console.WriteLine(embed?.video?.url);
-                            await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, $"{ep.epNum} - {ep.titles[0].ToString()}");
                         }
                     }
                 }

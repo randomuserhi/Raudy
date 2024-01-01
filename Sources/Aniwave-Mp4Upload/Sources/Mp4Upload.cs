@@ -19,7 +19,7 @@ public partial class Aniwave {
         }
 
         // TODO(randomuserhi): Cleanup or write proper API / design => This is test code to check if I can spoof Host and Origin to get file from mp4upload
-        public async Task DownloadVideo(string url, string fileName) {
+        public async Task DownloadVideo(string url, string path) {
             try {
                 HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
                     url);
@@ -51,7 +51,7 @@ public partial class Aniwave {
 
                             Stream data = await content.ReadAsStreamAsync();
                             // NOTE(randomuserhi): Allow reading for other applications to read a partially downloaded video
-                            FileStream writer = new FileStream($"F:/Anime/Konosuba Season 2/Sub/{fileName}.mp4", FileMode.Create, FileAccess.Write, FileShare.Read);
+                            FileStream writer = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
                             byte[] buffer = new byte[16 * 1024];
                             float total = 0;
                             int read;
