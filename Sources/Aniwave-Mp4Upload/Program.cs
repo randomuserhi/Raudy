@@ -47,6 +47,24 @@ namespace Source {
             }
         }
 
+        static char[] InvalidCharacters = Path.GetInvalidFileNameChars();
+        static string RemoveInvalidCharacters(string content, char replace = '_', bool doNotReplaceBackslashes = false) {
+            if (string.IsNullOrEmpty(content))
+                return content;
+
+            var idx = content.IndexOfAny(InvalidCharacters);
+            if (idx >= 0) {
+                var sb = new StringBuilder(content);
+                while (idx >= 0) {
+                    if (sb[idx] != '\\' || !doNotReplaceBackslashes)
+                        sb[idx] = replace;
+                    idx = content.IndexOfAny(InvalidCharacters, idx + 1);
+                }
+                return sb.ToString();
+            }
+            return content;
+        }
+
         static int Main(string[] args) {
             /*if (args.Length < 2)
             {
@@ -171,7 +189,8 @@ namespace Source {
                                 }
 
                                 Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
-                                string filename = $"{ep.epNum} - {ep.titles[0]}.mp4";
+                                string filename = RemoveInvalidCharacters($"{ep.epNum} - {ep.titles[0]}.mp4");
+
                                 await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, Path.Join(path, filename));
                                 Console.WriteLine("");
                             }
