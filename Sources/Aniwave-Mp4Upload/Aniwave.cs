@@ -269,7 +269,6 @@ public partial class Aniwave : IDisposable {
                     using (HttpContent content = res.Content) {
                         string data = await content.ReadAsStringAsync();
                         Response<string> resp = JsonConvert.DeserializeObject<Response<string>>(data);
-                        File.WriteAllText(@"F:Test.html", resp.result);
 
                         IHtmlDocument dom = parser.ParseDocument(string.Empty);
                         INodeList nodes = parser.ParseFragment(resp.result, dom.Body!);
@@ -381,7 +380,7 @@ public partial class Aniwave : IDisposable {
 
                             if (embedScrapers.ContainsKey(source.name)) {
                                 sources.Add(source);
-                            } else Console.WriteLine($"Don't support source: {source.name}");
+                            } else Console.WriteLine($"\tDon't support source: {source.name}");
                         }
 
                         sourceList.sources = sources.ToArray();

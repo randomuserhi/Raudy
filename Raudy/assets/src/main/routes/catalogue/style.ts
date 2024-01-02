@@ -7,27 +7,26 @@ declare namespace RHU {
     }
 }
 
-RHU.module(new Error(), "routes/catalogue/style",
-    { Style: "rhu/style", theme: "main/theme" },
-    function({ Style }) {
-        const style = Style(({ style }) => {
-            const wrapper = style.class`
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: row;
-            `;
+RHU.module(new Error(), "routes/catalogue/style", { 
+    Style: "rhu/style", theme: "main/theme" 
+}, function({ Style }) {
+    const style = Style(({ style }) => {
+        const wrapper = style.class`
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: row;
+        `;
 
-            const body = style.class`
-            flex: 1;
-            `;
+        const body = style.class`
+        flex: 1;
+        `;
 
-            return {
-                wrapper,
-                body,
-            };
-        });
+        return {
+            wrapper,
+            body,
+        };
+    });
 
-        return style;
-    }
-);
+    return style;
+});

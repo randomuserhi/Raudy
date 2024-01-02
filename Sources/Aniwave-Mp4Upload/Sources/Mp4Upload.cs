@@ -1,6 +1,33 @@
 ﻿using System.Net.Http.Headers;
 using System.Text;
 
+// For console use -> remove later
+internal class ConsoleUtility {
+    const char _block = '■';
+    const string _back = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
+    const string _twirl = "-\\|/";
+
+    public static void WriteProgressBar(int percent, bool update = false) {
+        if (update)
+            Console.Write(_back);
+        Console.Write("[");
+        var p = (int)((percent / 10f) + .5f);
+        for (var i = 0; i < 10; ++i) {
+            if (i >= p)
+                Console.Write(' ');
+            else
+                Console.Write(_block);
+        }
+        Console.Write("] {0,3:##0}%", percent);
+    }
+
+    public static void WriteProgress(int progress, bool update = false) {
+        if (update)
+            Console.Write("\b");
+        Console.Write(_twirl[progress % _twirl.Length]);
+    }
+}
+
 public partial class Aniwave {
     public class Mp4Upload : ISource, IDisposable {
         private HttpClient client = new HttpClient();
@@ -39,14 +66,12 @@ public partial class Aniwave {
                 //                     
                 //                     We can create a progress bar using the response header Content-Length property
                 using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
-                    Console.WriteLine(res.IsSuccessStatusCode);
                     if (res.IsSuccessStatusCode) {
                         using (HttpContent content = res.Content) {
                             HttpHeaders headers = content.Headers;
                             float contentLength;
                             if (headers.TryGetValues("Content-Length", out IEnumerable<string>? values)) {
                                 contentLength = int.Parse(values.First());
-                                Console.WriteLine(contentLength);
                             } else throw new Exception("No 'Content-Length' header");
 
                             Stream data = await content.ReadAsStreamAsync();
@@ -58,13 +83,14 @@ public partial class Aniwave {
                             while ((read = data.Read(buffer, 0, buffer.Length)) > 0) {
                                 writer.Write(buffer, 0, read);
                                 total += read;
-                                Console.WriteLine(total / contentLength);
+                                ConsoleUtility.WriteProgressBar((int)(total / contentLength * 100), true);
                             }
                             writer.Dispose();
                         }
                     }
                 }
 
+                ConsoleUtility.WriteProgressBar(100, true);
                 return;
             } catch (Exception exception) {
                 Console.WriteLine("Error trying to download episode:");

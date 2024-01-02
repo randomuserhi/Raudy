@@ -8,6 +8,45 @@ namespace Source {
     internal class Program {
         static bool running = true;
 
+        struct Range {
+            public int start;
+            public int end;
+
+            public Range(int startEnd) {
+                start = startEnd;
+                end = startEnd;
+            }
+
+            public Range(int start, int end) {
+                this.start = start;
+                this.end = end;
+            }
+        }
+
+        struct Job {
+            public string link;
+            public string path;
+            public Range[] episodes;
+
+            public Job(string link, string path, ArraySegment<string> ranges) {
+                this.link = link;
+                this.path = path;
+                List<Range> eps = new List<Range>();
+                foreach (string range in ranges) {
+                    string[] r = range.Split("-");
+                    if (r.Length == 1) {
+                        int startEnd = int.Parse(r[0].Trim());
+                        eps.Add(new Range(startEnd));
+                    } else if (r.Length == 2) {
+                        int start = int.Parse(r[0].Trim());
+                        int end = int.Parse(r[1].Trim());
+                        eps.Add(new Range(start, end));
+                    }
+                }
+                episodes = eps.ToArray();
+            }
+        }
+
         static int Main(string[] args) {
             /*if (args.Length < 2)
             {
@@ -64,6 +103,10 @@ namespace Source {
 
             server.Dispose();*/
 
+            if (args.Length < 3) {
+                Console.WriteLine("raudy <destination path: '.' for current directory> <'sub','dub'> <aniwave link> <[optional]: ranges of episodes to download, eg. '1-3,6,8-12'>");
+                return 1;
+            }
 
             Aniwave source = new Aniwave();
 
@@ -85,20 +128,37 @@ namespace Source {
                 //Aniwave.AnimeInfo info = query!.Value.results[0];
                 //Aniwave.Anime? anime = await source.GetFullAnimeDetails(info);
 
-                string[][] jobs = new string[][] {
-                    new string[] { "https://aniwave.to/watch/kono-subarashii-sekai-ni-bakuen-wo.yqkyp/ep-1", "F:/Anime/Konosuba Megamin/Sub/" }
-                };
+                Job[] jobs = new Job[1];
+                try {
+                    jobs[0] = new Job(args[2], args[0], args.Length > 3 ? args[3].Split(",") : new string[0]);
+                } catch (Exception) {
+                    Console.WriteLine("Failed to pass job.");
+                    return;
+                }
 
-                foreach (string[] job in jobs) {
-                    string link = job[0];
-                    string path = job[1];
+                Aniwave.Category category = Aniwave.Category.None;
+                if (args[1].ToLower().Trim() == "sub") {
+                    category |= Aniwave.Category.Sub;
+                } else if (args[1].ToLower().Trim() == "dub") {
+                    category |= Aniwave.Category.Dub;
+                } else {
+                    Console.WriteLine("Please choose 'sub' or 'dub'.");
+                }
+
+                foreach (Job job in jobs) {
+                    string link = job.link;
+                    string path = job.path;
                     Aniwave.Anime? anime = await source.GetFullAnimeDetails(link);
 
-                    Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, Aniwave.Category.Sub);
+                    Aniwave.EpisodeList? episodes = await source.GetEpisodes(anime.Value, category);
 
                     if (episodes != null) {
                         Aniwave.EpisodeList list = episodes.Value;
                         foreach (Aniwave.Episode ep in list.episodes) {
+                            if (job.episodes.Length != 0 && !job.episodes.Any(range => range.start <= ep.epNum && range.end >= ep.epNum)) {
+                                continue;
+                            }
+
                             Console.WriteLine($"{ep.id}: {ep.epNum} - {ep.titles[0]}: {ep.category}");
 
                             Aniwave.SourceList? sourceList = await source.GetSources(ep);
@@ -111,12 +171,13 @@ namespace Source {
                                 }
 
                                 Aniwave.VideoEmbed? embed = await source.GetEmbed(slist.sources[0]);
-                                Console.WriteLine(embed?.url);
-                                Console.WriteLine(embed?.video?.url);
                                 string filename = $"{ep.epNum} - {ep.titles[0]}.mp4";
                                 await source.embedScrapers["mp4upload"].DownloadVideo(embed!.Value.video!.Value.url, Path.Join(path, filename));
+                                Console.WriteLine("");
                             }
                         }
+                    } else {
+                        Console.WriteLine("No episodes found.");
                     }
                 }
             }).Wait();

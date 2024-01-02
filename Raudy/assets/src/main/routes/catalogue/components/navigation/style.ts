@@ -2,57 +2,41 @@ declare namespace RHU {
     interface Modules {
         "routes/catalogue/navigation/style": {
             wrapper: Style.ClassName;
+            extended: Style.ClassName;
             list: Style.ClassName;
-            item: Style.ClassName;
-            icon: Style.ClassName;
         };
     }
 }
 
-RHU.module(new Error(), "routes/catalogue/navigation/style",
-    { Style: "rhu/style", theme: "main/theme" },
-    function({ Style }) {
-        const style = Style(({ style }) => {
-            const wrapper = style.class`
-            background-color: grey;
-            height: 100%;
-            width: 48px;
-            `;
+RHU.module(new Error(), "routes/catalogue/navigation/style", { 
+    Style: "rhu/style", theme: "main/theme" 
+}, function({ Style }) {
+    const style = Style(({ style }) => {
+        const width = "48px";
+        const extendedWidth = "100px";
+        
+        const wrapper = style.class`
+        background-color: grey;
+        height: 100%;
+        width: ${width};
+        transition: all 200ms ease;
+        `;
+        
+        const extended = style.class`
+        width: ${extendedWidth};
+        `;
 
-            const list = style.class`
-            display: flex;
-            flex-direction: column;
-            `;
+        const list = style.class`
+        display: flex;
+        flex-direction: column;
+        `;
 
-            const item = style.class`
-            `;
-            style`
-            ${item} {
-                cursor: pointer;
-            }
-            `;
+        return {
+            wrapper,
+            extended,
+            list,
+        };
+    });
 
-            const icon = style.class`
-            background-color: black;
-            display: block;
-            width: 48px;
-            height: 48px;
-            transition: background-color 200ms ease;
-            `;
-            style`
-            ${icon}:hover {
-                background-color: white;
-            }
-            `;
-
-            return {
-                wrapper,
-                list,
-                item,
-                icon,
-            };
-        });
-
-        return style;
-    }
-);
+    return style;
+});

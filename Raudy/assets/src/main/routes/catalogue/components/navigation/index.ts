@@ -17,9 +17,11 @@ declare namespace Routes.Catalogue {
 }
 
 RHU.module(new Error(), "routes/catalogue/navigation", { 
-    Macro: "rhu/macro", style: "routes/catalogue/navigation/style"
+    Macro: "rhu/macro", style: "routes/catalogue/navigation/style",
+    item: "routes/catalogue/navigation/item"
 }, function({ 
-    Macro, style
+    Macro, style,
+    item
 }) {
     const navigation = Macro((() => {
         const navigation = function(this: Routes.Catalogue.navigation) {
@@ -29,13 +31,11 @@ RHU.module(new Error(), "routes/catalogue/navigation", {
     })(), "routes/catalogue/navigation", //html
     `
         <ul class="${style.list}">
-            <li class="${style.item}">
-                <a class="${style.icon}"></a>
-            </li>
+            ${item}
         </ul>
         `, {
         element: //html
-            `<div class="${style.wrapper}"></div>`
+            `<div class="${style.wrapper} ${style.extended}"></div>`
     });
 
     return navigation;
