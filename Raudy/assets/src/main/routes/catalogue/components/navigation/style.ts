@@ -13,7 +13,7 @@ RHU.module(new Error(), "routes/catalogue/navigation/style", {
 }, function({ Style }) {
     const style = Style(({ style }) => {
         const width = "48px";
-        const extendedWidth = "100px";
+        const extendedWidth = "200px";
         
         const wrapper = style.class`
         background-color: grey;

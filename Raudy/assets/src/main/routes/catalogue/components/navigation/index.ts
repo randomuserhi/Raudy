@@ -12,11 +12,14 @@ declare namespace RHU {
 
 declare namespace Routes.Catalogue {
     interface navigation extends HTMLDivElement {
-        append(): void; // TODO(randomuserhi)
+        items: Raudy.Shelf[];
+        dom: {
+            list: HTMLUListElement;
+        }
     }
 }
 
-RHU.module(new Error(), "routes/catalogue/navigation", { 
+RHU.module(new Error(), "routes/catalogue/navigation", {
     Macro: "rhu/macro", style: "routes/catalogue/navigation/style",
     item: "routes/catalogue/navigation/item"
 }, function({ 
@@ -24,18 +27,27 @@ RHU.module(new Error(), "routes/catalogue/navigation", {
     item
 }) {
     const navigation = Macro((() => {
+        const render = function(el: Routes.Catalogue.navigation) {
+            el.dom.list.replaceChildren(...el.items.map(shelf => {
+                const i = document.createMacro(item);
+                i.set(shelf);
+                return i;
+            }));
+        };
+
         const navigation = function(this: Routes.Catalogue.navigation) {
+            this.items = []; //Raudy.GET("shelf");
+            render(this);
         } as RHU.Macro.Constructor<Routes.Catalogue.navigation>;
 
         return navigation;
     })(), "routes/catalogue/navigation", //html
     `
-        <ul class="${style.list}">
-            ${item}
-        </ul>
+        <ul rhu-id="list" class="${style.list}"></ul>
         `, {
         element: //html
-            `<div class="${style.wrapper} ${style.extended}"></div>`
+            `<div class="${style.wrapper} ${style.extended}"></div>`,
+        encapsulate: "dom"
     });
 
     return navigation;
