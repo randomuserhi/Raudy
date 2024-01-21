@@ -13,8 +13,6 @@
 
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="1.0.7" />
-    <PackageReference Include="CefSharp.Common.NETCore" Version="120.1.110" />
-    <PackageReference Include="CefSharp.OffScreen.NETCore" Version="120.1.110" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
   </ItemGroup>
