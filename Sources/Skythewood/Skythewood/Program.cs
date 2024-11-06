@@ -56,16 +56,33 @@ namespace Source {
                         "https://skythewood.blogspot.com/2023/12/too-many-losing-heroines-v5-special.html",
                         "https://skythewood.blogspot.com/2023/12/too-many-losing-heroines-v5-special_14.html",
                         "https://skythewood.blogspot.com/2023/12/too-many-losing-heroines-anime.html"
+                    },
+                    new string[] {
+                        "https://skythewood.blogspot.com/2023/12/too-many-losing-heroines-v6-prologue.html",
+                        "https://skythewood.blogspot.com/2024/02/too-many-losing-heroines-v6-chapter-2.html",
+                        "https://skythewood.blogspot.com/2024/03/too-many-losing-heroines-v6-chapter-3.html",
+                        "https://skythewood.blogspot.com/2024/05/too-many-losing-heroines-v6-chapter-4.html",
+                        "https://skythewood.blogspot.com/2024/05/too-many-losing-heroines-v6-afterword.html",
+                        "https://skythewood.blogspot.com/2024/06/too-many-losing-heroines-v6-special.html",
+                        "https://skythewood.blogspot.com/2024/06/too-many-losing-heroines-v6-special_11.html",
+                    },
+                    new string[] {
+                        "https://skythewood.blogspot.com/2024/07/too-many-losing-heroines-v7-prologue.html",
+                        "https://skythewood.blogspot.com/2024/08/too-many-losing-heroines-v7-chapter-2.html",
+                        "https://skythewood.blogspot.com/2024/08/too-many-losing-heroines-v7-chapter-3.html",
+                        "https://skythewood.blogspot.com/2024/08/too-many-losing-heroines-v7-chapter-4.html",
+                        "https://skythewood.blogspot.com/2024/08/too-many-losing-heroines-v7-afterword.html",
+                        "https://skythewood.blogspot.com/2024/08/too-many-losing-heroines-v7-special.html",
                     }
                 };
 
                 // ----
 
-                for (int v = 0; v < Volumes.Length; ++v) {
+                for (int v = 6; v < Volumes.Length; ++v) {
                     Console.WriteLine("Downloading Volume " + (v + 1));
                     string[] urls = Volumes[v];
                     for (int i = 0; i < urls.Length; ++i) {
-                        await skythewood.DownloadBlog(urls[i], @"F:\Visual Novels\[Self-Sourced] Too Many Losing Herorines (skythewood)\Raw\" + $"Volume {(v + 1)}", $"{(i + 1).ToString("D4")}.xhtml");
+                        await skythewood.DownloadBlog(urls[i], @"D:\Visual Novels\[Self-Sourced] Too Many Losing Herorines (skythewood)\Raw\" + $"Volume {(v + 1)}", $"{(i + 1).ToString("D4")}.xhtml");
                     }
                 }
                 Console.WriteLine("Done!");

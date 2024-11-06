@@ -18,7 +18,12 @@ public partial class Skythewood {
     }
 
     public Skythewood() {
-        client = new HttpClient();
+        // Handle Gzip compression and redirects
+        HttpClientHandler handler = new HttpClientHandler();
+        handler.AllowAutoRedirect = true;
+        handler.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+
+        client = new HttpClient(handler);
         client.BaseAddress = new Uri(baseUrl);
         client.DefaultRequestHeaders.Referrer = new Uri(baseUrl);
 
