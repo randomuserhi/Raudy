@@ -682,7 +682,7 @@ namespace Source {
 
                 };
 
-                const int chapterPerVolume = 50;
+                const int chapterPerVolume = 100;
 
                 int volume = 1;
                 int chapter = 1;
@@ -690,7 +690,7 @@ namespace Source {
                     Console.WriteLine($"{url}");
                     await translateinotaku.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] Helmut\Raw\" + $"Volume {volume}", $"{(chapter++).ToString("D4")}.xhtml");
 
-                    if (chapter > 50) {
+                    if (chapter > chapterPerVolume) {
                         ++volume;
                         chapter = 1;
                     }
