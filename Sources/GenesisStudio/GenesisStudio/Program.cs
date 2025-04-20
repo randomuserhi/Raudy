@@ -331,6 +331,8 @@ namespace Source {
                         ++volume;
                         chapter = 1;
                     }
+
+                    Thread.Sleep(5000); // Cloudflare rate limiting
                 }
 
                 Console.WriteLine("Done!");
