@@ -7,8 +7,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class ElloTL {
-    private const string domain = "ellotl.com";
+public partial class ArcaneTL {
+    private const string domain = "arcanetranslations.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
@@ -18,7 +18,7 @@ public partial class ElloTL {
         client.Dispose();
     }
 
-    public ElloTL() {
+    public ArcaneTL() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -187,7 +187,7 @@ public partial class ElloTL {
                     using (HttpContent content = res.Content) {
                         IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
 
-                        IElement title = document.QuerySelector(".entry-title")!;
+                        IElement title = document.QuerySelector(".cat-series")!;
                         state.epub.AppendLine($"<h1>{title.InnerHtml.Trim()}</h1>");
                         state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
                         state.epub.AppendLine($"<div class=\"content\">");

@@ -1,7 +1,9 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 
 public partial class GenesisStudio {
@@ -46,13 +48,14 @@ public partial class GenesisStudio {
     private class State {
         public string path;
         public StringBuilder epub = new StringBuilder();
+        public static int image = 0;
 
         public State(string path) {
             this.path = path;
         }
     }
 
-    private static string[] validIdentifiers = new string[] { "p", "i", "b", "u", "em" };
+    private static string[] validIdentifiers = new string[] { "p", "br", "i", "b", "u", "em", "hr", "img" };
     private static string[] ignoreIdentifiers = new string[] { "script" };
     private async Task Process(INode node, State state, bool inParagraph = false) {
         if (node.NodeType == NodeType.Element) {
@@ -61,7 +64,7 @@ public partial class GenesisStudio {
             string identifier = $"{el.TagName.Trim().ToLower()}";
 
             if (ignoreIdentifiers.Contains(identifier)) return;
-            if (el.TextContent.Trim() == string.Empty) return;
+            if (identifier != "br" && identifier != "hr" && identifier != "img" && el.TextContent.Trim() == string.Empty && el.QuerySelector("img") == null) return;
 
             bool isValid = validIdentifiers.Contains(identifier);
             if (identifier == "div") {
@@ -70,9 +73,22 @@ public partial class GenesisStudio {
                     isValid = true;
                     identifier = "p";
                 }
+            } else if (identifier == "img") {
+                string imgurl = el.GetAttribute("src")!;
+                string ext = GetExtensionFromURL(imgurl);
+                int id = State.image++;
+                ext = await DownloadImage(imgurl, Path.Join(state.path, "Images", $"{id}{ext}"), ext);
+                state.epub.AppendLine($"<div><img src=\"../Images/{id}{ext}\" alt=\"\" /></div>");
+
+                return;
             }
 
             bool isInParagraph = inParagraph || (identifier == "p");
+
+            if (identifier == "br") {
+                state.epub.AppendLine(isInParagraph ? "</p><p>" : "<br/>");
+                return;
+            }
 
             if (isValid) {
                 if (!isInParagraph) state.epub.Append($"\n<p><{identifier}>");
@@ -95,6 +111,62 @@ public partial class GenesisStudio {
             if (inParagraph) state.epub.Append($"{text}");
             else state.epub.Append($"<p>{text}</p>");
         }
+    }
+
+    private Regex r = new Regex(@"(\.[a-zA-Z0-9]+)(\?|\#|$)");
+    private string GetExtensionFromURL(string url) {
+        Match token = r.Match(url);
+        if (!token.Success) return "";
+        return token.Groups[1].Value;
+    }
+
+    private async Task<string> DownloadImage(string url, string path, string ext) {
+        //return ext;
+        try {
+            client.DefaultRequestHeaders.Remove("Host");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+            url);
+            request.Headers.Add("Referer", $"{baseUrl}");
+            request.Headers.Add("httpVersion", "h3");
+
+            using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
+                if (res.IsSuccessStatusCode) {
+                    using (HttpContent content = res.Content) {
+                        HttpHeaders headers = content.Headers;
+                        if (ext == "") {
+                            if (headers.TryGetValues("Content-Type", out IEnumerable<string>? values)) {
+                                string mimeType = values.First();
+                                switch (mimeType) {
+                                case "image/jpeg":
+                                    ext = ".jpg";
+                                    break;
+                                case "image/png":
+                                    ext = ".png";
+                                    break;
+                                }
+                            }
+                            path += ext;
+                        }
+
+                        Stream data = await content.ReadAsStreamAsync();
+                        FileStream writer = new FileStream(path, FileMode.Create);
+                        byte[] buffer = new byte[16 * 1024];
+                        int read;
+                        while ((read = data.Read(buffer, 0, buffer.Length)) > 0) {
+                            writer.Write(buffer, 0, read);
+                        }
+                        writer.Dispose();
+                    }
+                }
+            }
+        } catch (Exception exception) {
+            Console.WriteLine($"Error trying to download image: {url}");
+            Console.WriteLine(exception);
+        } finally {
+            client.DefaultRequestHeaders.Add("Host", domain);
+        }
+
+        return ext;
     }
 
     // NOTE(randomuserhi): returns the link to the previous post
