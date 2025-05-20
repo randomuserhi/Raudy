@@ -108,7 +108,7 @@ public partial class DarkStarTL {
             }
 
         } else if (node.NodeType == NodeType.Text) {
-            string text = HttpUtility.HtmlEncode(node.TextContent).Trim();
+            string text = HttpUtility.HtmlEncode(node.TextContent);
             if (text == string.Empty) return;
 
             if (inParagraph) state.epub.Append($"{text}");
