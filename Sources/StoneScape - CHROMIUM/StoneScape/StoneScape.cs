@@ -1,24 +1,39 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using CefSharp;
+using CefSharp.OffScreen;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Web;
-using WebSocketSharp;
 
-public partial class StorySeed {
-    private const string domain = "storyseedling.com";
-    private const string baseUrl = $"https://{domain}";
+public partial class StoneScape {
+    private HtmlParser parser = new HtmlParser();
+    private ChromiumWebBrowser browser = new ChromiumWebBrowser();
+
+    private const string domain = "stonescape.xyz";
+    private string baseUrl = $"https://{domain}";
 
     private HttpClient client;
-    private HtmlParser parser = new HtmlParser();
 
     public void Dispose() {
+        browser.Dispose();
         client.Dispose();
     }
 
-    public StorySeed() {
+    public StoneScape() {
+        if (!Cef.IsInitialized.HasValue || !Cef.IsInitialized.Value) {
+            var settings = new CefSettings();
+            Cef.Initialize(settings);
+        }
+
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -37,15 +52,6 @@ public partial class StorySeed {
         client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
     }
 
-    private void DebugRequestHeaders(HttpRequestMessage request) {
-        foreach (KeyValuePair<string, IEnumerable<string>> h in client.DefaultRequestHeaders) {
-            Console.WriteLine($"{h.Key}: {string.Join(", ", h.Value)}");
-        }
-        foreach (KeyValuePair<string, IEnumerable<string>> h in request.Headers) {
-            Console.WriteLine($"{h.Key}: {string.Join(", ", h.Value)}");
-        }
-    }
-
     private class State {
         public string path;
         public StringBuilder epub = new StringBuilder();
@@ -57,8 +63,8 @@ public partial class StorySeed {
     }
 
     private static string[] validIdentifiers = new string[] { "p", "br", "i", "b", "u", "em", "hr", "img" };
-    private static string[] ignoreIdentifiers = new string[] { "script", "style" };
-    private async Task Process(INode node, State state, FontMapping? fontMapping = null, bool inParagraph = false) {
+    private static string[] ignoreIdentifiers = new string[] { "script" };
+    private async Task Process(INode node, State state, bool inParagraph = false) {
         if (node.NodeType == NodeType.Element) {
 
             IElement el = (IElement)node;
@@ -75,10 +81,10 @@ public partial class StorySeed {
                     identifier = "p";
                 }
             } else if (identifier == "img") {
-                string imgurl = el.GetAttribute("src")!;
+                string imgurl = el.GetAttribute("src");
                 string ext = GetExtensionFromURL(imgurl);
                 int id = State.image++;
-                ext = await DownloadImage(imgurl, Path.Join(state.path, "Images", $"{id}{ext}"), ext);
+                ext = await DownloadImage(imgurl, Path.Combine(state.path, "Images", $"{id}{ext}"), ext);
                 state.epub.AppendLine($"<div><img src=\"../Images/{id}{ext}\" alt=\"\" /></div>");
 
                 return;
@@ -97,7 +103,7 @@ public partial class StorySeed {
             }
 
             foreach (INode child in node.ChildNodes) {
-                await Process(child, state, fontMapping, inParagraph || isValid);
+                await Process(child, state, inParagraph || isValid);
             }
 
             if (isValid) {
@@ -106,19 +112,7 @@ public partial class StorySeed {
             }
 
         } else if (node.NodeType == NodeType.Text) {
-            string text = node.TextContent;
-
-            // Special code specific to this source to remove class references:
-            if (text.StartsWith("cls")) return;
-            // Special code specific to this source to remove theft notice:
-            if (text.Contains("⽕⽣⽤⽮ ⽞⽪⽩⽯⽠⽩⽯ ⽤⽮ ⽪⽲⽩⽠⽟ ⽝⽴ ⽔⽯⽪⽭⽴ ⽔⽠⽠⽟⽧⽤⽩⽢. ⽊⽡ ⽴⽪⽰ ⽜⽭⽠ ⽭⽠⽜⽟⽤⽩⽢ ⽯⽣⽤⽮ ⽪⽩ ⽜ ⽮⽤⽯⽠ ⽪⽯⽣⽠⽭ ⽯⽣⽜⽩ ⽮⽯⽪⽭⽴⽮⽠⽠⽟⽧⽤⽩⽢.⽞⽪⽨, ⽫⽧⽠⽜⽮⽠ ⽭⽠⽫⽪⽭⽯ ⽤⽯ ⽯⽪ ⽰⽮.")) return;
-
-            text = HttpUtility.HtmlEncode(node.TextContent);
-
-            if (fontMapping != null) {
-                text = fontMapping.Convert(text);
-            }
-
+            string text = HttpUtility.HtmlEncode(node.TextContent);
             if (text == string.Empty) return;
 
             if (inParagraph) state.epub.Append($"{text}");
@@ -137,7 +131,7 @@ public partial class StorySeed {
         //return ext;
         try {
             client.DefaultRequestHeaders.Remove("Host");
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+            HttpRequestMessage request = new HttpRequestMessage(System.Net.Http.HttpMethod.Get,
             url);
             request.Headers.Add("Referer", $"{baseUrl}");
             request.Headers.Add("httpVersion", "h3");
@@ -147,7 +141,7 @@ public partial class StorySeed {
                     using (HttpContent content = res.Content) {
                         HttpHeaders headers = content.Headers;
                         if (ext == "") {
-                            if (headers.TryGetValues("Content-Type", out IEnumerable<string>? values)) {
+                            if (headers.TryGetValues("Content-Type", out IEnumerable<string> values)) {
                                 string mimeType = values.First();
                                 switch (mimeType) {
                                 case "image/jpeg":
@@ -182,66 +176,41 @@ public partial class StorySeed {
         return ext;
     }
 
-    Regex nonceReg = new Regex(@"loadChapter\('(.*)',\s*'(.*)'\)");
-
     // NOTE(randomuserhi): returns the link to the previous post
     //                     this is done because the site doesn't have an index of URLs...
-    public async Task<bool> DownloadChapter(string url, string path, string filename, FontMapping? fontMapping = null) {
+    public async Task DownloadChapter(string url, string path, string filename) {
         string prevURL = string.Empty;
 
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
 
-            HttpRequestMessage mainRequest = new HttpRequestMessage(HttpMethod.Get, url);
+            await browser.LoadUrlAsync(url);
+            await browser.WaitForInitialLoadAsync();
 
-            using (HttpResponseMessage mainRes = await client.SendAsync(mainRequest)) {
-                if (mainRes.IsSuccessStatusCode) {
-                    using (HttpContent mainContent = mainRes.Content) {
-                        IHtmlDocument document = parser.ParseDocument(await mainContent.ReadAsStringAsync());
+            string source = await browser.GetSourceAsync();
 
-                        IElement title = document.QuerySelector(".text-xl")!;
-                        state.epub.AppendLine($"<h1>{title.InnerHtml.Trim()}</h1>");
-                        state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
-                        state.epub.AppendLine($"<div class=\"content\">");
-
-                        string nonceCode = document.QuerySelector("div[ax-load]")!.GetAttribute("x-data")!;
-                        MatchCollection matches = nonceReg.Matches(nonceCode);
-                        if (matches.Count != 1) throw new Exception("Failed to find Nonce.");
-                        string nonce = matches[0].Groups[2].Value;
-
-                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, $"{url}/content");
-                        request.Content = new StringContent("{\"captcha_response\":\"\"}", Encoding.UTF8, "application/json");
-
-                        request.Headers.Add("Referer", url);
-                        request.Headers.Add("X-Nonce", $"{nonce}");
-
-                        using (HttpResponseMessage res = await client.SendAsync(request)) {
-                            if (res.IsSuccessStatusCode) {
-                                using (HttpContent content = res.Content) {
-                                    IHtmlDocument contentDocument = parser.ParseDocument($"<html><body class=\"content\">{await content.ReadAsStringAsync()}</body></html>");
-
-                                    IElement body = contentDocument.QuerySelector(".content")!;
-                                    await Process(body, state, fontMapping);
-                                }
-                            } else {
-                                throw new Exception("Failed to fetch content: " + res.StatusCode);
-                            }
-                        }
-
-                        state.epub.AppendLine($"</div>");
-                    }
-                }
+            // Wait for cloudflare to resolve
+            while (source.Contains("Verifying you are human")) {
+                await browser.WaitForNavigationAsync();
+                await browser.WaitForInitialLoadAsync();
+                source = await browser.GetSourceAsync();
             }
 
+            IHtmlDocument document = parser.ParseDocument(source);
+
+            IElement title = document.QuerySelector(".breadcrumb>li.active");
+            state.epub.AppendLine($"<h1>{title.InnerHtml.Trim()}</h1>");
+            state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
+
+            IElement body = document.QuerySelector(".reading-content.test-222>div.text-left");
+            await Process(body, state);
+
             state.epub.AppendLine("</body></html>");
-            File.WriteAllText(Path.Join(path, "Text", filename), state.epub.ToString());
+            File.WriteAllText(Path.Combine(path, "Text", filename), state.epub.ToString());
         } catch (Exception exception) {
             Console.WriteLine($"Error trying to obtain chapter: {url}");
             Console.WriteLine(exception);
-            return false;
         }
-
-        return true;
     }
 }

@@ -1,5 +1,8 @@
 ﻿// Project > Properties > Change from Console Application to Windows Application when moving to production
 
+// TODO(randomuserhi): Move to use chromium, the Post request is super dodgy and fails constantly :(
+//                     Only seems stable if I have a chrome tab with the website open
+
 namespace Source {
     internal class Program {
         static int Main(string[] args) {
@@ -12,6 +15,11 @@ namespace Source {
                     // Use a viewer like https://fontdrop.info/ and locate all characters and use a pattern:
                     {
                         for (int codePoint = 0x2010, i = 0; codePoint < 0x2F42; ++codePoint, ++i) {
+                            string c = char.ConvertFromUtf32(codePoint).ToString();
+                            fontMapping.Add(c, c);
+                        }
+
+                        for (int codePoint = 0x300E, i = 0; codePoint <= 0x300F; ++codePoint, ++i) {
                             string c = char.ConvertFromUtf32(codePoint).ToString();
                             fontMapping.Add(c, c);
                         }
@@ -40,7 +48,7 @@ namespace Source {
                     "https://storyseedling.com/series/99893/v1/8",
                     "https://storyseedling.com/series/99893/v1/9",
                     "https://storyseedling.com/series/99893/v1/10",
-                    "https://storyseedling.com/series/99893/v1/194",
+                    //"https://storyseedling.com/series/99893/v1/194",
                     "https://storyseedling.com/series/99893/v2/11",
                     "https://storyseedling.com/series/99893/v2/12",
                     "https://storyseedling.com/series/99893/v2/13",
@@ -230,20 +238,27 @@ namespace Source {
                     "https://storyseedling.com/series/99893/v6/196",*/
                 };
 
+                Random r = new Random();
+
                 const int chapterPerVolume = 100;
 
+                int skip = 50;
+
                 int volume = 1;
-                int chapter = 1;
-                foreach (string url in urls) {
+                int chapter = skip + 1;
+                for (int i = skip; i < urls.Length; ++i) {
+                    string url = urls[i];
                     Console.WriteLine($"{url}");
-                    await storySeed.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] Lazy Villainous and The Villainess Daughter\Raw\" + $"Volume {volume}", $"{(chapter++).ToString("D4")}.xhtml", fontMapping);
+                    if (!await storySeed.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] Lazy Villainous and The Villainess Daughter\Raw\" + $"Volume {volume}", $"{(chapter++).ToString("D4")}.xhtml", fontMapping)) {
+                        throw new Exception("Dead");
+                    }
 
                     if (chapter > chapterPerVolume) {
                         ++volume;
                         chapter = 1;
                     }
 
-                    Thread.Sleep(30000); // Cloudflare rate limiting
+                    Thread.Sleep(5000); // Cloudflare rate limiting
                 }
 
                 Console.WriteLine("Done!");
