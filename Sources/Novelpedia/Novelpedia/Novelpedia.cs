@@ -1,13 +1,15 @@
 ﻿using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using Newtonsoft.Json.Linq;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
+using WebSocketSharp;
 
-public partial class GenesisStudio {
-    private const string domain = "genesistudio.com";
+public partial class Novelpedia {
+    private const string domain = "global.novelpia.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
@@ -17,7 +19,7 @@ public partial class GenesisStudio {
         client.Dispose();
     }
 
-    public GenesisStudio() {
+    public Novelpedia() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -34,8 +36,6 @@ public partial class GenesisStudio {
         client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Google Chrome\";v=\"113\", \"Chromium\";v=\"113\", \"Not-A.Brand\";v=\"24\"");
         client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
         client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
-
-        client.Timeout = new TimeSpan(0, 1, 0);
     }
 
     private void DebugRequestHeaders(HttpRequestMessage request) {
@@ -171,29 +171,107 @@ public partial class GenesisStudio {
         return ext;
     }
 
-    // NOTE(randomuserhi): returns the link to the previous post
-    //                     this is done because the site doesn't have an index of URLs...
-    public async Task DownloadChapter(string url, string path, string filename) {
-        string prevURL = string.Empty;
+    public async Task<string> GetCookie(string url) {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add("Sec-Fetch-Site", "Same-Origin");
 
+        using (HttpResponseMessage res = await client.SendAsync(request)) {
+            if (res.IsSuccessStatusCode) {
+                if (res.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values)) {
+                    foreach (string s in values) {
+                        if (s.StartsWith("USERKEY")) {
+                            return s;
+                        }
+                    }
+                }
+            }
+        }
+
+        throw new Exception("Unable to find cookie!");
+    }
+
+    public async Task WatchAd(string novelNo, string episodeNo, string cookie) {
+        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+            $"https://api-global.novelpia.com/v1/ad/reward/token?novel_no={novelNo}&episode_no={episodeNo}");
+        request.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+        request.Headers.Add("Cookie", cookie);
+
+        using (HttpResponseMessage res = await client.SendAsync(request)) {
+            if (res.IsSuccessStatusCode) {
+                using (HttpContent content = res.Content) {
+                    JObject json = JObject.Parse(await content.ReadAsStringAsync());
+                    JObject result = json.Value<JObject>("result")!;
+                    string token = result.Value<string>("token")!;
+
+                    // Fake watch time
+                    Thread.Sleep(5000);
+
+                    HttpRequestMessage grant = new HttpRequestMessage(HttpMethod.Post,
+                        $"https://api-global.novelpia.com/v1/ad/reward/grant");
+                    grant.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                    grant.Headers.Add("Cookie", cookie);
+
+                    grant.Content = new StringContent($"{{\"novel_no\":{novelNo},\"episode_no\":{episodeNo},\"flag_success\":1,\"token\":\"{token}\"}}");
+                    grant.Content.Headers.ContentType!.MediaType = "application/json";
+
+                    using (HttpResponseMessage grantResult = await client.SendAsync(grant)) {
+                        if (grantResult.IsSuccessStatusCode) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        throw new Exception("Unable to watch ad!");
+    }
+
+    public async Task DownloadChapter(string url, string path, string filename, string cookie) {
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
 
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                url);
+            string episodeNo = url.Split("/").Last();
 
-            using (HttpResponseMessage res = await client.SendAsync(request)) {
-                if (res.IsSuccessStatusCode) {
-                    using (HttpContent content = res.Content) {
-                        IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
+            HttpRequestMessage episodeRequest = new HttpRequestMessage(HttpMethod.Get,
+                $"https://api-global.novelpia.com/v1/novel/episode?episode_no={episodeNo}");
+            episodeRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+            episodeRequest.Headers.Add("Cookie", cookie);
 
-                        IElement title = document.QuerySelector(".sr-only")!;
-                        state.epub.AppendLine($"<h1>{title.InnerHtml.Trim()}</h1>");
-                        state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
+            using (HttpResponseMessage episodeRes = await client.SendAsync(episodeRequest)) {
+                if (episodeRes.IsSuccessStatusCode) {
+                    using (HttpContent episodeContent = episodeRes.Content) {
+                        JObject episodeData = JObject.Parse(await episodeContent.ReadAsStringAsync());
+                        JObject episodeDataResult = episodeData.Value<JObject>("result")!;
+                        string token = episodeDataResult.Value<string>("_t")!;
 
-                        IElement body = document.QuerySelector(".novel-content.break-words")!;
-                        await Process(body, state);
+                        HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+                            $"https://api-global.novelpia.com/v1/novel/episode/content?_t={token}");
+                        request.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                        request.Headers.Add("Cookie", cookie);
+
+                        using (HttpResponseMessage res = await client.SendAsync(request)) {
+                            if (res.IsSuccessStatusCode) {
+                                using (HttpContent content = res.Content) {
+                                    JObject chapter = JObject.Parse(await content.ReadAsStringAsync());
+                                    JObject chapterContent = chapter.Value<JObject>("result")!.Value<JObject>("data")!;
+                                    StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
+                                    foreach (var kv in chapterContent) {
+                                        html.Append(WebUtility.HtmlDecode(kv.Value!.Value<string>()));
+                                    }
+                                    html.Append("</div><body></html>");
+
+                                    state.epub.AppendLine($"<h1>{episodeDataResult.Value<JObject>("data")!.Value<string>("epi_title")}</h1>");
+                                    state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
+                                    state.epub.AppendLine($"<div class=\"content\">");
+
+                                    IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
+                                    await Process(body, state);
+
+                                    state.epub.AppendLine($"</div>");
+                                }
+                            }
+                        }
                     }
                 }
             }
