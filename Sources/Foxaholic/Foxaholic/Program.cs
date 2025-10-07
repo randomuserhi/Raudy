@@ -720,18 +720,27 @@ namespace Source {
 
                 const int chapterPerVolume = 100;
 
+                int skip = 0;
+
                 int volume = 1;
                 int chapter = 1;
-                foreach (string url in urls) {
-                    Console.WriteLine($"{url}");
-                    await darkStarTL.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] Taming the villainess\Raw\" + $"Volume {volume}", $"{(chapter++).ToString("D4")}.xhtml");
+                for (int i = 0; i < urls.Length; ++i) {
+                    var url = urls[i];
 
-                    if (chapter > chapterPerVolume) {
+                    Console.WriteLine($"{url}");
+
+                    if (i >= skip) {
+                        await darkStarTL.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] Taming the villainess\Raw\" + $"Volume {volume}", $"{chapter.ToString("D4")}.xhtml");
+                    }
+
+                    if ((++chapter) > chapterPerVolume) {
                         ++volume;
                         chapter = 1;
                     }
 
-                    Thread.Sleep(100); // Cloudflare rate limiting
+                    if (i >= skip) {
+                        Thread.Sleep(10000); // Cloudflare rate limiting
+                    }
                 }
 
                 Console.WriteLine("Done!");

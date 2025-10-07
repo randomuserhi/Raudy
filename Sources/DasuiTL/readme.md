@@ -1,0 +1,1 @@
+Use the encoded font to read the text
