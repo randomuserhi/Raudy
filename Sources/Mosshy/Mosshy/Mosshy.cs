@@ -7,8 +7,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class YukiKitsuneko {
-    private const string domain = "yukikitsuneko.blogspot.com";
+public partial class Mosshy {
+    private const string domain = "mosshytranslations.id";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
@@ -18,7 +18,7 @@ public partial class YukiKitsuneko {
         client.Dispose();
     }
 
-    public YukiKitsuneko() {
+    public Mosshy() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -203,15 +203,14 @@ public partial class YukiKitsuneko {
                     using (HttpContent content = res.Content) {
                         IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
 
-                        IElement? title = document.QuerySelector(".post-body.entry-content.float-container>h1");
+                        IElement? title = document.QuerySelector(".epcontent.entry-content>h1");
                         if (title != null) {
                             title.RemoveFromParent();
                             state.epub.AppendLine($"<h1>{title.TextContent.Trim()}</h1>");
                         }
                         state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
 
-                        IElement body = document.QuerySelector(".post-body.entry-content.float-container")!;
-                        if (/*title != null && */body.Children[0].TagName == "IMG") body.Children[0].Remove();
+                        IElement body = document.QuerySelector(".epcontent.entry-content")!;
                         await Process(body, state);
                     }
                 }

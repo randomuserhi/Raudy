@@ -201,7 +201,16 @@ public partial class ArcaneTL {
             }
 
             state.epub.AppendLine("</body></html>");
-            File.WriteAllText(Path.Join(path, "Text", filename), state.epub.ToString());
+
+            string filepath = Path.Join(path, "Text", filename);
+
+            string? directory = Path.GetDirectoryName(filepath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
+                Directory.CreateDirectory(directory);
+            }
+
+            File.WriteAllText(filepath, state.epub.ToString());
+
         } catch (Exception exception) {
             Console.WriteLine($"Error trying to obtain chapter: {url}");
             Console.WriteLine(exception);

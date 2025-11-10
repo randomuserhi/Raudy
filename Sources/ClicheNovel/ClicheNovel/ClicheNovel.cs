@@ -7,8 +7,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class YukiKitsuneko {
-    private const string domain = "yukikitsuneko.blogspot.com";
+public partial class ClicheNovel {
+    private const string domain = "clichenovel.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
@@ -18,7 +18,7 @@ public partial class YukiKitsuneko {
         client.Dispose();
     }
 
-    public YukiKitsuneko() {
+    public ClicheNovel() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -190,7 +190,46 @@ public partial class YukiKitsuneko {
         return ext;
     }
 
-    public async Task DownloadChapter(string url, string path, string filename) {
+    public struct Chapter {
+        public string url;
+        public string title;
+    }
+
+    public async Task<List<Chapter>> GetChapters(string name, int numPages) {
+        List<Chapter> urls = new List<Chapter>();
+
+        for (int i = numPages; i > 0; --i) {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
+                    $"{baseUrl}/category/{name}/page/{i}");
+
+            Console.WriteLine($"Page: {i}");
+
+            using (HttpResponseMessage res = await client.SendAsync(request)) {
+                if (res.IsSuccessStatusCode) {
+                    using (HttpContent content = res.Content) {
+                        IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
+                        var articles = document.QuerySelectorAll("article").Reverse();
+                        foreach (var article in articles) {
+                            Chapter chapter = new Chapter();
+                            chapter.title = article.QuerySelector(".entry-content")!.TextContent.Trim();
+                            chapter.url = article.QuerySelector("a")!.GetAttribute("href")!;
+
+                            if (!chapter.url.Contains("patron")) continue;
+
+                            urls.Add(chapter);
+                            Console.WriteLine($"Found: {chapter.title} {chapter.url}");
+                        }
+                    }
+                }
+            }
+
+            Thread.Sleep(1000); // Cloudflare rate limiting
+        }
+
+        return urls;
+    }
+
+    public async Task DownloadChapter(string url, string path, string filename, string title = "") {
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
@@ -203,15 +242,19 @@ public partial class YukiKitsuneko {
                     using (HttpContent content = res.Content) {
                         IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
 
-                        IElement? title = document.QuerySelector(".post-body.entry-content.float-container>h1");
-                        if (title != null) {
-                            title.RemoveFromParent();
-                            state.epub.AppendLine($"<h1>{title.TextContent.Trim()}</h1>");
-                        }
                         state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
 
-                        IElement body = document.QuerySelector(".post-body.entry-content.float-container")!;
-                        if (/*title != null && */body.Children[0].TagName == "IMG") body.Children[0].Remove();
+                        var list = document.QuerySelectorAll(".has-text-align-center.has-huge-font-size");
+                        foreach (var item in list) {
+                            item.Remove();
+                        }
+                        document.GetElementById("jp-post-flair")?.Remove();
+
+                        if (title != string.Empty) {
+                            state.epub.AppendLine($"<h1>{title}</h1>");
+                        }
+
+                        IElement body = document.QuerySelector(".entry-content")!;
                         await Process(body, state);
                     }
                 }

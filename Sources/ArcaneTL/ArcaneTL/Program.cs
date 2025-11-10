@@ -150,22 +150,112 @@ namespace Source {
 "https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-141/",
 "https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-142/",
 "https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-143/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-144/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-145/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-146/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-147/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-148/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-149/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-150/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-151/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-152/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-153/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-154/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-155/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-156/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-157/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-158/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-159/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-160/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-161/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-162/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-163/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-164/",
+"https://arcanetranslations.com/how-to-ruin-a-love-comedy-chapter-165/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-166/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-167/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-168/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-169/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-170/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-171/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-172/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-173/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-174/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-175/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-176/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-177/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-178/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-179/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-180/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-181/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-182/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-183/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-184/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-185/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-186/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-187/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-188/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-189/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-190/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-191/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-192/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-193/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-194/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-195/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-196/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-197/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-198/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-199/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-200/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-201/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-202/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-203/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-204/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-205/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-206/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-207/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-208/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-209/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-210/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-211/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-212/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-213/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-214/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-215/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-216/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-217/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-218/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-219/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-220/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-221/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-222/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-223/",
+"https://arcanetranslations.com/i-possessed-the-villain-in-a-romantic-comedy-game-chapter-224/",
                 };
 
                 const int chapterPerVolume = 100;
 
+                int skip = 143;
+
                 int volume = 1;
                 int chapter = 1;
-                foreach (string url in urls) {
-                    Console.WriteLine($"{url}");
-                    await arcaneTL.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] How to ruin a romantic comedy\Raw\" + $"Volume {volume}", $"{(chapter++).ToString("D4")}.xhtml");
+                for (int i = 0; i < urls.Length; ++i) {
+                    var url = urls[i];
 
-                    if (chapter > chapterPerVolume) {
+                    Console.WriteLine($"{url}");
+
+                    if (i >= skip) {
+                        await arcaneTL.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] [Ongoing] How to ruin a romantic comedy\Raw\" + $"Volume {volume}", $"{chapter.ToString("D4")}.xhtml");
+                    }
+
+                    if ((++chapter) > chapterPerVolume) {
                         ++volume;
                         chapter = 1;
                     }
 
-                    Thread.Sleep(100); // Cloudflare rate limiting
+                    if (i >= skip) {
+                        Thread.Sleep(1000); // Cloudflare rate limiting
+                    }
                 }
 
                 Console.WriteLine("Done!");
