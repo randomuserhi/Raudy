@@ -1,4 +1,4 @@
-﻿public partial class Novelpedia {
+﻿public partial class Novelpia {
     public struct Content {
 
     }

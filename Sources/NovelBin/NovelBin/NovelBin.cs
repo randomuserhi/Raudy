@@ -60,6 +60,14 @@ public partial class NovelBin {
         }
     }
 
+    private string CleanUnicode(string input) {
+        return HttpUtility.HtmlDecode(input).Replace("\u200B", "")  // Zero width space
+                                            .Replace("\u200C", "")  // Zero width non-joiner
+                                            .Replace("\u200D", "")  // Zero width joiner
+                                            .Replace("\u2060", "")  // Word joiner
+                                            .Replace("\uFEFF", ""); // Zero width no-break space (BOM);
+    }
+
     private static string[] validIdentifiers = new string[] { "p", "br", "i", "b", "u", "em", "hr", "img" };
     private static string[] ignoreIdentifiers = new string[] { "script" };
     private async Task Process(INode node, State state, bool inParagraph = false) {
@@ -68,8 +76,10 @@ public partial class NovelBin {
             IElement el = (IElement)node;
             string identifier = $"{el.TagName.Trim().ToLower()}";
 
+            string textContent = CleanUnicode(el.TextContent).Trim();
+
             if (ignoreIdentifiers.Contains(identifier)) return;
-            if (identifier != "br" && identifier != "hr" && identifier != "img" && el.TextContent.Trim() == string.Empty && el.QuerySelector("img") == null) return;
+            if (identifier != "br" && identifier != "hr" && identifier != "img" && textContent == string.Empty && el.QuerySelector("img") == null) return;
 
             // Specific to Yukikitsuneko
             if (el.GetAttribute("class")?.Contains("anti-scrape") == true) {
@@ -121,7 +131,7 @@ public partial class NovelBin {
             }
 
         } else if (node.NodeType == NodeType.Text) {
-            string text = HttpUtility.HtmlEncode(node.TextContent);
+            string text = HttpUtility.HtmlEncode(CleanUnicode(node.TextContent).Trim());
             if (text == string.Empty) return;
 
             if (inParagraph) state.epub.Append($"{text}");
