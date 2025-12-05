@@ -1,8 +1,10 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using Newtonsoft.Json.Linq;
+using System.Collections;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -13,11 +15,15 @@ public partial class Novelpia {
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
+    private CookieContainer cookieContainer;
     private HtmlParser parser = new HtmlParser();
 
-    public struct SessionInfo {
-        public string cookie;
+    public class SessionInfo {
         public string JWT;
+
+        public SessionInfo(string JWT) {
+            this.JWT = JWT;
+        }
     }
 
     public void Dispose() {
@@ -25,10 +31,15 @@ public partial class Novelpia {
     }
 
     public Novelpia() {
+        // Handle cookies
+        cookieContainer = new CookieContainer();
+
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
         handler.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+        handler.CookieContainer = cookieContainer;
+        handler.UseCookies = true;
 
         client = new HttpClient(handler);
         client.BaseAddress = new Uri(baseUrl);
@@ -62,16 +73,34 @@ public partial class Novelpia {
         }
     }
 
+    private string CleanUnicode(string input) {
+        return HttpUtility.HtmlDecode(input).Replace("\u200B", "")  // Zero width space
+                                            .Replace("\u200C", "")  // Zero width non-joiner
+                                            .Replace("\u200D", "")  // Zero width joiner
+                                            .Replace("\u2060", "")  // Word joiner
+                                            .Replace("\uFEFF", ""); // Zero width no-break space (BOM);
+    }
+
     private static string[] validIdentifiers = new string[] { "p", "br", "i", "b", "u", "em", "hr", "img" };
     private static string[] ignoreIdentifiers = new string[] { "script" };
-    private async Task Process(INode node, State state, bool inParagraph = false) {
+    private async Task Process(SessionInfo session, INode node, State state, bool inParagraph = false) {
         if (node.NodeType == NodeType.Element) {
 
             IElement el = (IElement)node;
             string identifier = $"{el.TagName.Trim().ToLower()}";
 
+            string textContent = CleanUnicode(el.TextContent).Trim();
+
             if (ignoreIdentifiers.Contains(identifier)) return;
-            if (identifier != "br" && identifier != "hr" && identifier != "img" && el.TextContent.Trim() == string.Empty && el.QuerySelector("img") == null) return;
+            if (identifier != "br" && identifier != "hr" && identifier != "img" && textContent == string.Empty && el.QuerySelector("img") == null) return;
+
+            // Specific to Yukikitsuneko
+            if (el.GetAttribute("class")?.Contains("anti-scrape") == true) {
+                return;
+            }
+            if (el.GetAttribute("href")?.Contains("https://www.patreon.com/YukiKitsunekoFanTL") == true) {
+                return;
+            }
 
             bool isValid = validIdentifiers.Contains(identifier);
             if (identifier == "div") {
@@ -81,11 +110,14 @@ public partial class Novelpia {
                     identifier = "p";
                 }
             } else if (identifier == "img") {
-                string imgurl = el.GetAttribute("src")!;
-                string ext = GetExtensionFromURL(imgurl);
-                int id = State.image++;
-                ext = await DownloadImage(imgurl, Path.Join(state.path, "Images", $"{id}{ext}"), ext);
-                state.epub.AppendLine($"<div><img src=\"../Images/{id}{ext}\" alt=\"\" /></div>");
+                string? imgurl = el.GetAttribute("src");
+
+                if (imgurl != null) {
+                    string ext = GetExtensionFromURL(imgurl);
+                    int id = State.image++;
+                    ext = await DownloadImage(session, imgurl, Path.Join(state.path, "Images", $"{id}{ext}"), ext);
+                    state.epub.AppendLine($"<div><img src=\"../Images/{id}{ext}\" alt=\"\" /></div>");
+                }
 
                 return;
             }
@@ -103,7 +135,7 @@ public partial class Novelpia {
             }
 
             foreach (INode child in node.ChildNodes) {
-                await Process(child, state, inParagraph || isValid);
+                await Process(session, child, state, inParagraph || isValid);
             }
 
             if (isValid) {
@@ -112,7 +144,7 @@ public partial class Novelpia {
             }
 
         } else if (node.NodeType == NodeType.Text) {
-            string text = HttpUtility.HtmlEncode(node.TextContent);
+            string text = HttpUtility.HtmlEncode(CleanUnicode(node.TextContent).Trim());
             if (text == string.Empty) return;
 
             if (inParagraph) state.epub.Append($"{text}");
@@ -127,7 +159,7 @@ public partial class Novelpia {
         return token.Groups[1].Value;
     }
 
-    private async Task<string> DownloadImage(string url, string path, string ext) {
+    private async Task<string> DownloadImage(SessionInfo session, string url, string path, string ext) {
         //return ext;
         try {
             client.DefaultRequestHeaders.Remove("Host");
@@ -135,6 +167,7 @@ public partial class Novelpia {
             url);
             request.Headers.Add("Referer", $"{baseUrl}");
             request.Headers.Add("httpVersion", "h3");
+            request.Headers.Add("Login-At", session.JWT);
 
             using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
                 if (res.IsSuccessStatusCode) {
@@ -181,8 +214,87 @@ public partial class Novelpia {
         return ext;
     }
 
+    // For debugging
+    private static List<Cookie> DumpAllCookies(CookieContainer cookieJar) {
+        var cookies = new List<Cookie>();
+
+        var table = (Hashtable)cookieJar.GetType()
+            .InvokeMember("m_domainTable",
+                BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance,
+                null, cookieJar, new object[] { })!;
+
+        foreach (var key in table.Keys) {
+            string? domain = key as string;
+            if (domain == null)
+                continue;
+
+            SortedList? pathList = table[key]!
+                .GetType()
+                .InvokeMember("m_list",
+                    BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance,
+                    null, table[key], new object[] { }) as SortedList;
+
+            if (pathList == null)
+                continue;
+
+            foreach (var pathKey in pathList.Keys) {
+                var cookieCollection = pathList[pathKey] as CookieCollection;
+                if (cookieCollection != null) {
+                    foreach (Cookie cookie in cookieCollection) {
+                        cookies.Add(cookie);
+                    }
+                }
+            }
+        }
+
+        return cookies;
+    }
+
+    private Cookie? ParseCookie(string header, Uri uri) {
+        var parts = header.Split(';');
+        if (parts.Length == 0) return null;
+
+        var nameValue = parts[0].Split('=', 2);
+        if (nameValue.Length != 2) return null;
+
+        var cookie = new Cookie(nameValue[0].Trim(), nameValue[1].Trim());
+
+        // Optional attributes
+        foreach (var p in parts.Skip(1)) {
+            var segment = p.Trim();
+            if (segment.StartsWith("Path=", StringComparison.OrdinalIgnoreCase))
+                cookie.Path = segment.Substring(5);
+            else if (segment.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase))
+                cookie.Domain = segment.Substring(7);
+            else if (segment.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase)
+                  && DateTime.TryParse(segment.Substring(8), out var expires))
+                cookie.Expires = expires;
+            else if (segment.Equals("Secure", StringComparison.OrdinalIgnoreCase))
+                cookie.Secure = true;
+            else if (segment.Equals("HttpOnly", StringComparison.OrdinalIgnoreCase))
+                cookie.HttpOnly = true;
+        }
+
+        // Default domain if missing
+        if (string.IsNullOrEmpty(cookie.Domain))
+            cookie.Domain = uri.Host;
+
+        return cookie;
+    }
+
+    private void UpdateCookies(HttpRequestMessage req, HttpResponseHeaders headers) {
+        if (headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values)) {
+            foreach (string header in values) {
+                var cookie = ParseCookie(header, req.RequestUri!);
+                if (cookie != null) {
+                    cookieContainer.Add(req.RequestUri!, cookie);
+                }
+            }
+        }
+    }
+
     public async Task<SessionInfo> GetSession(string email, string password) {
-        SessionInfo session = new SessionInfo();
+        SessionInfo session = new SessionInfo("");
 
         // Login
         HttpRequestMessage loginRequest = new HttpRequestMessage(HttpMethod.Post,
@@ -197,22 +309,16 @@ public partial class Novelpia {
                     string JWT = result.Value<string>("LOGINAT")!;
 
                     session.JWT = JWT;
-                }
 
-                // Obtain cookie
-                HttpRequestMessage cookieRequest = new HttpRequestMessage(HttpMethod.Get, baseUrl);
-                cookieRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                cookieRequest.Headers.Add("Login-At", session.JWT);
+                    // Obtain cookie
+                    HttpRequestMessage cookieRequest = new HttpRequestMessage(HttpMethod.Get, baseUrl);
+                    cookieRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                    cookieRequest.Headers.Add("Login-At", session.JWT);
 
-                using (HttpResponseMessage res = await client.SendAsync(cookieRequest)) {
-                    if (res.IsSuccessStatusCode) {
-                        if (res.Headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values)) {
-                            foreach (string s in values) {
-                                if (s.StartsWith("USERKEY")) {
-                                    session.cookie = s;
-                                    return session;
-                                }
-                            }
+                    using (HttpResponseMessage res = await client.SendAsync(cookieRequest)) {
+                        if (res.IsSuccessStatusCode) {
+                            UpdateCookies(cookieRequest, res.Headers);
+                            return session;
                         }
                     }
                 }
@@ -222,7 +328,7 @@ public partial class Novelpia {
         throw new Exception("Unable to obtain session!");
     }
 
-    public async Task<SessionInfo> UpdateSession(SessionInfo session) {
+    public async Task UpdateSession(SessionInfo session, bool force = false) {
         string[] jwtParts = session.JWT.Split(".");
         JObject content = JObject.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(jwtParts[1])));
         long expiration = content.Value<long>("exp");
@@ -230,11 +336,10 @@ public partial class Novelpia {
         long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         // Session has not expired yet
-        if (currentTime < expiration) return session;
+        if (currentTime < expiration && !force) return;
 
         HttpRequestMessage refreshRequest = new HttpRequestMessage(HttpMethod.Get, "https://api-global.novelpia.com/v1/login/refresh");
         refreshRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-        refreshRequest.Headers.Add("Cookie", session.cookie);
         refreshRequest.Headers.Add("Login-At", session.JWT);
 
         using (HttpResponseMessage refreshResult = await client.SendAsync(refreshRequest)) {
@@ -243,10 +348,11 @@ public partial class Novelpia {
                     JObject response = JObject.Parse(await refreshContent.ReadAsStringAsync());
                     JObject result = response.Value<JObject>("result")!;
                     string JWT = result.Value<string>("LOGINAT")!;
+                    Console.WriteLine($"Session update\nold:{session.JWT}\n{JWT}");
 
                     session.JWT = JWT;
 
-                    return session;
+                    return;
                 }
             }
         }
@@ -264,7 +370,6 @@ public partial class Novelpia {
             Content = new StringContent($"{{\"url\":\"https://global.novelpia.com/viewer/{episodeNo}\",\"referrer\":\"https://global.novelpia.com/viewer/{episodeNo}\"}}", Encoding.UTF8, "application/json")
         };
         request.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-        request.Headers.Add("Cookie", session.cookie);
         request.Headers.Add("Login-At", session.JWT);
 
         using (HttpResponseMessage res = await client.SendAsync(request)) {
@@ -272,7 +377,6 @@ public partial class Novelpia {
                 HttpRequestMessage request2 = new HttpRequestMessage(HttpMethod.Get,
                     $"https://api-global.novelpia.com/v1/ad/reward/token?novel_no={novelNo}&episode_no={episodeNo}");
                 request2.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                request2.Headers.Add("Cookie", session.cookie);
                 request2.Headers.Add("Login-At", session.JWT);
                 using (HttpResponseMessage res2 = await client.SendAsync(request2)) {
                     if (res2.IsSuccessStatusCode) {
@@ -287,14 +391,12 @@ public partial class Novelpia {
                                 Content = new StringContent($"{{\"novel_no\":{novelNo},\"episode_no\":{episodeNo},\"flag_success\":1,\"token\":\"{adToken}\"}}", Encoding.UTF8, "application/json")
                             };
                             request3.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                            request3.Headers.Add("Cookie", session.cookie);
                             request3.Headers.Add("Login-At", session.JWT);
                             using (HttpResponseMessage res3 = await client.SendAsync(request3)) {
                                 if (res3.IsSuccessStatusCode) {
                                     HttpRequestMessage request4 = new HttpRequestMessage(HttpMethod.Get,
                                                     $"https://api-global.novelpia.com/v1/ad/log/novel_guest?novel_no={novelNo}&episode_no={episodeNo}");
                                     request4.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                                    request4.Headers.Add("Cookie", session.cookie);
                                     request4.Headers.Add("Login-At", session.JWT);
                                     using (HttpResponseMessage res4 = await client.SendAsync(request4)) {
                                         if (res4.IsSuccessStatusCode) {
@@ -323,7 +425,6 @@ public partial class Novelpia {
                 HttpRequestMessage episodeRequest = new HttpRequestMessage(HttpMethod.Get,
                     $"https://api-global.novelpia.com/v1/novel/episode?episode_no={episodeNo}");
                 episodeRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                episodeRequest.Headers.Add("Cookie", session.cookie);
                 episodeRequest.Headers.Add("Login-At", session.JWT);
 
                 using (HttpResponseMessage episodeRes = await client.SendAsync(episodeRequest)) {
@@ -336,7 +437,6 @@ public partial class Novelpia {
                             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
                                 $"https://api-global.novelpia.com/v1/novel/episode/content?_t={token}");
                             request.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                            request.Headers.Add("Cookie", session.cookie);
                             request.Headers.Add("Login-At", session.JWT);
 
                             using (HttpResponseMessage res = await client.SendAsync(request)) {
@@ -355,9 +455,41 @@ public partial class Novelpia {
                                         state.epub.AppendLine($"<div class=\"content\">");
 
                                         IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
-                                        await Process(body, state);
+                                        await Process(session, body, state);
 
                                         state.epub.AppendLine($"</div>");
+
+                                        break;
+                                    }
+                                } else {
+                                    HttpRequestMessage imageRequest = new HttpRequestMessage(HttpMethod.Get,
+                                    $"https://api-global.novelpia.com/v1/novel/episode/image?_t={token}");
+                                    imageRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                                    imageRequest.Headers.Add("Login-At", session.JWT);
+
+                                    using (HttpResponseMessage imageResponse = await client.SendAsync(imageRequest)) {
+                                        if (imageResponse.IsSuccessStatusCode) {
+                                            using (HttpContent content = imageResponse.Content) {
+                                                JObject chapter = JObject.Parse(await content.ReadAsStringAsync());
+                                                JArray chapterContent = chapter.Value<JObject>("result")!.Value<JArray>("data")!;
+                                                StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
+                                                foreach (JObject obj in chapterContent) {
+                                                    html.Append($"<img src=\"{obj.Value<string>("file_url")!}\">");
+                                                }
+                                                html.Append("</div><body></html>");
+
+                                                state.epub.AppendLine($"<h1>{episodeDataResult.Value<JObject>("data")!.Value<string>("epi_title")}</h1>");
+                                                state.epub.AppendLine($"<p><a href=\"https://global.novelpia.com/viewer/{episodeNo}\">Original</a></p>");
+                                                state.epub.AppendLine($"<div class=\"content\">");
+
+                                                IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
+                                                await Process(session, body, state);
+
+                                                state.epub.AppendLine($"</div>");
+
+                                                break;
+                                            }
+                                        }
                                     }
                                 }
                             }

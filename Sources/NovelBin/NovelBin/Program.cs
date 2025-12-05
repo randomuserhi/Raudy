@@ -6,7 +6,7 @@ namespace Source {
             Task.Run(async void () => {
                 NovelBin novelbin = new NovelBin();
 
-                string[] urls = {
+                /*string[] urls = {
                     "https://novelbin.com/b/overpowered-archmage-doesnt-hide-his-talent/chapter-1-prologue",
                     "https://novelbin.com/b/overpowered-archmage-doesnt-hide-his-talent/chapter-2-cleaning",
                     "https://novelbin.com/b/overpowered-archmage-doesnt-hide-his-talent/chapter-3-agora-board",
@@ -252,11 +252,120 @@ namespace Source {
                     "https://novelbin.com/b/overpowered-archmage-doesnt-hide-his-talent/chapter-244-the-new-dean",
                     "https://novelbin.com/b/overpowered-archmage-doesnt-hide-his-talent/chapter-245",
                     "https://novelbin.com/b/overpowered-archmage-doesnt-hide-his-talent/chapter-246",
+                };*/
+
+                string[] urls = {
+                    "https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-0",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-1",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-2",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-3",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-4",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-5",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-6",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-7",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-8",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-9",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-10",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-11",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-12",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-13",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-14",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-15",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-16",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-17",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-18",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-19",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-20",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-21",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-22",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-23",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-24",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-25",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-26",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-27",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-28",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-29",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-30",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-31",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-32",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-33",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-34",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-35",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-36",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-37",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-38",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-39",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-40",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-41",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-42",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-43",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-44",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-45",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-46",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-47",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-48",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-49",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-50",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-51",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-52",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-53",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-54",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-55",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-56",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-57",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-58",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-59",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-60",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-61",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-62",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-63",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-64",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-65",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-66",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-67",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-68",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-69",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-70",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-71",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-72",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-73",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-74",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-75",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-76",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-77",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-78",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-79",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-80",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-81",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-82",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-83",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-84",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-85",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-86",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-87",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-88",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-89",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-90",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-91",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-92",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-93",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-94",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-95",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-96",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-97",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-98",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-99",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-100",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-101",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-102",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-103",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-104",
+"https://novelbin.me/novel-book/seducing-the-student-council-president/chapter-105",
                 };
 
                 const int chapterPerVolume = 100;
 
-                int skip = 200;
+                int skip = 0;
 
                 int volume = 1;
                 int chapter = 1;
@@ -266,7 +375,7 @@ namespace Source {
                     Console.WriteLine($"{url}");
 
                     if (i >= skip) {
-                        await novelbin.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] The Overpowered Archmage Reveals Himself\Raw\" + $"Volume {volume}", $"{chapter.ToString("D4")}.xhtml");
+                        await novelbin.DownloadChapter(url, @"D:\Visual Novels\[Self-Sourced] Seducing the student council president\Raw\" + $"Volume {volume}", $"{chapter.ToString("D4")}.xhtml");
                     }
 
                     if ((++chapter) > chapterPerVolume) {

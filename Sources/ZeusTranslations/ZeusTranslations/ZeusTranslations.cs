@@ -7,8 +7,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class NovelBin {
-    private const string domain = "novelbin.me";
+public partial class ZeusTranslations {
+    private const string domain = "zeustranslations.blogspot.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
@@ -18,7 +18,7 @@ public partial class NovelBin {
         client.Dispose();
     }
 
-    public NovelBin() {
+    public ZeusTranslations() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -201,27 +201,6 @@ public partial class NovelBin {
     }
 
     public async Task DownloadChapter(string url, string path, string filename) {
-        if (url[0] == '<') {
-            State state = new State(path);
-            state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
-
-            IElement body = parser.ParseDocument($"<html><head></head><body><div class='content'>{url}</div><body></html>").QuerySelector(".content")!;
-            await Process(body, state);
-
-            state.epub.AppendLine("</body></html>");
-
-            string filepath = Path.Join(path, "Text", filename);
-
-            string? directory = Path.GetDirectoryName(filepath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
-                Directory.CreateDirectory(directory);
-            }
-
-            File.WriteAllText(filepath, state.epub.ToString());
-
-            return;
-        }
-
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
@@ -232,17 +211,12 @@ public partial class NovelBin {
             using (HttpResponseMessage res = await client.SendAsync(request)) {
                 if (res.IsSuccessStatusCode) {
                     using (HttpContent content = res.Content) {
-                        IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
-
-                        IElement? title = document.QuerySelector("#chr-content>h3");
-                        if (title != null) {
-                            state.epub.AppendLine($"<h1>{title.TextContent.Trim()}</h1>");
-                            title.RemoveFromParent();
-                        }
+                        string source = await content.ReadAsStringAsync();
+                        IHtmlDocument document = parser.ParseDocument(source);
 
                         state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
 
-                        IElement body = document.QuerySelector("#chr-content")!;
+                        IElement body = document.QuerySelector(".chapter-content")!;
                         await Process(body, state);
                     }
                 }

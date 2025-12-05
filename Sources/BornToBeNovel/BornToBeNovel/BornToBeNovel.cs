@@ -1,5 +1,4 @@
 ﻿using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using System.Net.Http.Headers;
 using System.Text;
@@ -7,8 +6,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class NovelBin {
-    private const string domain = "novelbin.me";
+public partial class BornToBeNovel {
+    private const string domain = "www.borntobenovel.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
@@ -18,7 +17,7 @@ public partial class NovelBin {
         client.Dispose();
     }
 
-    public NovelBin() {
+    public BornToBeNovel() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
@@ -200,28 +199,11 @@ public partial class NovelBin {
         return ext;
     }
 
+    private Regex contentRegex = new Regex(@"(const contentData)\s*\=\s*[\'\""\`](.+)[\'\""\`]\;");
+    private Regex simpleFormatting = new Regex(@"\*\*.*?\*\*|(?<!\*)\*(?!\*).*?(?<!\*)\*(?!\*)|~.*?~|^\s*\*\s*\*\s*\*\s*$", RegexOptions.Multiline);
+    private Regex hrRegex = new Regex(@"^\s*\*\s*\*\s*\*\s*$");
+
     public async Task DownloadChapter(string url, string path, string filename) {
-        if (url[0] == '<') {
-            State state = new State(path);
-            state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
-
-            IElement body = parser.ParseDocument($"<html><head></head><body><div class='content'>{url}</div><body></html>").QuerySelector(".content")!;
-            await Process(body, state);
-
-            state.epub.AppendLine("</body></html>");
-
-            string filepath = Path.Join(path, "Text", filename);
-
-            string? directory = Path.GetDirectoryName(filepath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
-                Directory.CreateDirectory(directory);
-            }
-
-            File.WriteAllText(filepath, state.epub.ToString());
-
-            return;
-        }
-
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
@@ -232,18 +214,50 @@ public partial class NovelBin {
             using (HttpResponseMessage res = await client.SendAsync(request)) {
                 if (res.IsSuccessStatusCode) {
                     using (HttpContent content = res.Content) {
-                        IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
-
-                        IElement? title = document.QuerySelector("#chr-content>h3");
-                        if (title != null) {
-                            state.epub.AppendLine($"<h1>{title.TextContent.Trim()}</h1>");
-                            title.RemoveFromParent();
-                        }
+                        string source = await content.ReadAsStringAsync();
 
                         state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
 
-                        IElement body = document.QuerySelector("#chr-content")!;
-                        await Process(body, state);
+                        var matches = contentRegex.Match(source);
+                        if (matches.Success) {
+                            string chapterContent = Encoding.UTF8.GetString(Convert.FromBase64String(matches.Groups[2].Value));
+
+                            StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
+
+                            if (simpleFormatting.IsMatch(chapterContent)) {
+                                string[] lines = chapterContent.Split("\n");
+
+                                foreach (string raw in lines) {
+                                    string line = CleanUnicode(raw.Trim());
+                                    if (line == string.Empty) continue;
+
+                                    if (hrRegex.IsMatch(line)) {
+                                        html.Append("<hr>");
+                                        continue;
+                                    }
+
+                                    line = Regex.Replace(line, @"^\s*~\s*", "");
+                                    line = Regex.Replace(line, @"\s*~\s*$", "");
+
+                                    line = Regex.Replace(line, @"\*\*([^\*]+)\*\*", "<strong>$1</strong>");
+                                    line = Regex.Replace(line, @"(?<!\*)\*(?!\*)([^\*]+?)(?<!\*)\*(?!\*)", "<em>$1</em>");
+
+                                    html.Append($"<p>{line}</p>");
+                                }
+                            } else {
+                                string[] lines = chapterContent.Split("\n");
+                                foreach (string raw in lines) {
+                                    string line = CleanUnicode(raw.Trim());
+                                    if (line == string.Empty) continue;
+                                    html.Append($"<p>{line}</p>");
+                                }
+                            }
+
+                            html.Append("</div><body></html>");
+
+                            IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
+                            await Process(body, state);
+                        }
                     }
                 }
             }

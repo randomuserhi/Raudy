@@ -1,28 +1,37 @@
 ﻿using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using System.Collections;
+using System.Net;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class NovelBin {
-    private const string domain = "novelbin.me";
+public partial class PastelTales {
+    private const string domain = "pasteltales.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
+    private CookieContainer cookieContainer;
     private HtmlParser parser = new HtmlParser();
 
     public void Dispose() {
         client.Dispose();
     }
 
-    public NovelBin() {
+    public PastelTales() {
+        // Handle cookies
+        cookieContainer = new CookieContainer();
+
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
         handler.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
+        handler.CookieContainer = cookieContainer;
+        handler.UseCookies = true;
 
         // Disable SSL check (with it on, we throw exception on fetching website)
         /*handler.ServerCertificateCustomValidationCallback =
@@ -200,28 +209,86 @@ public partial class NovelBin {
         return ext;
     }
 
-    public async Task DownloadChapter(string url, string path, string filename) {
-        if (url[0] == '<') {
-            State state = new State(path);
-            state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
+    // For debugging
+    private static List<Cookie> DumpAllCookies(CookieContainer cookieJar) {
+        var cookies = new List<Cookie>();
 
-            IElement body = parser.ParseDocument($"<html><head></head><body><div class='content'>{url}</div><body></html>").QuerySelector(".content")!;
-            await Process(body, state);
+        var table = (Hashtable)cookieJar.GetType()
+            .InvokeMember("m_domainTable",
+                BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance,
+                null, cookieJar, new object[] { })!;
 
-            state.epub.AppendLine("</body></html>");
+        foreach (var key in table.Keys) {
+            string? domain = key as string;
+            if (domain == null)
+                continue;
 
-            string filepath = Path.Join(path, "Text", filename);
+            SortedList? pathList = table[key]!
+                .GetType()
+                .InvokeMember("m_list",
+                    BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance,
+                    null, table[key], new object[] { }) as SortedList;
 
-            string? directory = Path.GetDirectoryName(filepath);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) {
-                Directory.CreateDirectory(directory);
+            if (pathList == null)
+                continue;
+
+            foreach (var pathKey in pathList.Keys) {
+                var cookieCollection = pathList[pathKey] as CookieCollection;
+                if (cookieCollection != null) {
+                    foreach (Cookie cookie in cookieCollection) {
+                        cookies.Add(cookie);
+                    }
+                }
             }
-
-            File.WriteAllText(filepath, state.epub.ToString());
-
-            return;
         }
 
+        return cookies;
+    }
+
+    private Cookie? ParseCookie(string header, Uri uri) {
+        var parts = header.Split(';');
+        if (parts.Length == 0) return null;
+
+        var nameValue = parts[0].Split('=', 2);
+        if (nameValue.Length != 2) return null;
+
+        var cookie = new Cookie(nameValue[0].Trim(), nameValue[1].Trim());
+
+        // Optional attributes
+        foreach (var p in parts.Skip(1)) {
+            var segment = p.Trim();
+            if (segment.StartsWith("Path=", StringComparison.OrdinalIgnoreCase))
+                cookie.Path = segment.Substring(5);
+            else if (segment.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase))
+                cookie.Domain = segment.Substring(7);
+            else if (segment.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase)
+                  && DateTime.TryParse(segment.Substring(8), out var expires))
+                cookie.Expires = expires;
+            else if (segment.Equals("Secure", StringComparison.OrdinalIgnoreCase))
+                cookie.Secure = true;
+            else if (segment.Equals("HttpOnly", StringComparison.OrdinalIgnoreCase))
+                cookie.HttpOnly = true;
+        }
+
+        // Default domain if missing
+        if (string.IsNullOrEmpty(cookie.Domain))
+            cookie.Domain = uri.Host;
+
+        return cookie;
+    }
+
+    private void UpdateCookies(HttpRequestMessage req, HttpResponseHeaders headers) {
+        if (headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values)) {
+            foreach (string header in values) {
+                var cookie = ParseCookie(header, req.RequestUri!);
+                if (cookie != null) {
+                    cookieContainer.Add(req.RequestUri!, cookie);
+                }
+            }
+        }
+    }
+
+    public async Task DownloadChapter(string url, string path, string filename) {
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
@@ -232,17 +299,14 @@ public partial class NovelBin {
             using (HttpResponseMessage res = await client.SendAsync(request)) {
                 if (res.IsSuccessStatusCode) {
                     using (HttpContent content = res.Content) {
-                        IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
+                        string source = await content.ReadAsStringAsync();
+                        IHtmlDocument document = parser.ParseDocument(source);
 
-                        IElement? title = document.QuerySelector("#chr-content>h3");
-                        if (title != null) {
-                            state.epub.AppendLine($"<h1>{title.TextContent.Trim()}</h1>");
-                            title.RemoveFromParent();
-                        }
+                        document.QuerySelector(".abh_box")?.Remove();
 
                         state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
 
-                        IElement body = document.QuerySelector("#chr-content")!;
+                        IElement body = document.QuerySelector(".reading-content")!;
                         await Process(body, state);
                     }
                 }
