@@ -176,11 +176,24 @@ namespace Source {
                     "https://fenrirealm.com/series/academy-s-villain-professor/167",
                     "https://fenrirealm.com/series/academy-s-villain-professor/168",
                     "https://fenrirealm.com/series/academy-s-villain-professor/169",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/170",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/171",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/172",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/173",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/174",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/175",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/176",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/177",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/178",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/179",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/180",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/181",
+                    "https://fenrirealm.com/series/academy-s-villain-professor/182",
                 };
 
                 const int chapterPerVolume = 100;
 
-                int skip = 0;
+                int skip = 169;
 
                 int volume = 1;
                 int chapter = 1;

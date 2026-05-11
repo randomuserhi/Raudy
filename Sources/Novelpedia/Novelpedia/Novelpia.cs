@@ -10,6 +10,21 @@ using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
+public static class Base64Url {
+    public static byte[] Decode(string input) {
+        string s = input
+            .Replace('-', '+')
+            .Replace('_', '/');
+
+        switch (s.Length % 4) {
+        case 2: s += "=="; break;
+        case 3: s += "="; break;
+        }
+
+        return Convert.FromBase64String(s);
+    }
+}
+
 public partial class Novelpia {
     private const string domain = "global.novelpia.com";
     private const string baseUrl = $"https://{domain}";
@@ -330,7 +345,7 @@ public partial class Novelpia {
 
     public async Task UpdateSession(SessionInfo session, bool force = false) {
         string[] jwtParts = session.JWT.Split(".");
-        JObject content = JObject.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(jwtParts[1])));
+        JObject content = JObject.Parse(Encoding.UTF8.GetString(Base64Url.Decode(jwtParts[1])));
         long expiration = content.Value<long>("exp");
 
         long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -360,8 +375,6 @@ public partial class Novelpia {
         throw new Exception("Unable to update session!");
     }
 
-    // NOTE(randomuserhi): Not perfect... Logic somehow differs from real version causing ad chapters to not log on website
-    //                     But it does let me pull episode content...
     public async Task WatchAd(SessionInfo session, string novelNo, string episodeNo, int fakeWatchTime = 5000) {
         await UpdateSession(session);
 
@@ -394,15 +407,7 @@ public partial class Novelpia {
                             request3.Headers.Add("Login-At", session.JWT);
                             using (HttpResponseMessage res3 = await client.SendAsync(request3)) {
                                 if (res3.IsSuccessStatusCode) {
-                                    HttpRequestMessage request4 = new HttpRequestMessage(HttpMethod.Get,
-                                                    $"https://api-global.novelpia.com/v1/ad/log/novel_guest?novel_no={novelNo}&episode_no={episodeNo}");
-                                    request4.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                                    request4.Headers.Add("Login-At", session.JWT);
-                                    using (HttpResponseMessage res4 = await client.SendAsync(request4)) {
-                                        if (res4.IsSuccessStatusCode) {
-                                            return;
-                                        }
-                                    }
+                                    return;
                                 }
                             }
                         }

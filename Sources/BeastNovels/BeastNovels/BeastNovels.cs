@@ -1,48 +1,44 @@
 ﻿using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
-using Newtonsoft.Json.Linq;
-using System.Collections;
-using System.Net;
 using System.Net.Http.Headers;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using WebSocketSharp;
 
-public partial class GenesisStudio {
-    private const string domain = "genesistudio.com";
+public partial class BeastNovels {
+    private const string domain = "beastnovels.com";
     private const string baseUrl = $"https://{domain}";
 
     private HttpClient client;
-    private CookieContainer cookieContainer;
     private HtmlParser parser = new HtmlParser();
-
-    public class SessionInfo {
-        public string JWT;
-
-        public SessionInfo(string JWT) {
-            this.JWT = JWT;
-        }
-    }
 
     public void Dispose() {
         client.Dispose();
     }
 
-    public GenesisStudio() {
-        // Handle cookies
-        cookieContainer = new CookieContainer();
-
+    public BeastNovels() {
         // Handle Gzip compression and redirects
         HttpClientHandler handler = new HttpClientHandler();
         handler.AllowAutoRedirect = true;
         handler.AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate;
-        handler.CookieContainer = cookieContainer;
-        handler.UseCookies = true;
+
+        // Disable SSL check (with it on, we throw exception on fetching website)
+        /*handler.ServerCertificateCustomValidationCallback =
+                (HttpRequestMessage message, X509Certificate2? cert, X509Chain? chain, SslPolicyErrors errors) => true;*/
 
         client = new HttpClient(handler);
         client.BaseAddress = new Uri(baseUrl);
+        client.DefaultRequestHeaders.Referrer = new Uri(baseUrl);
+
+        // Imitate request from chrome
+        client.DefaultRequestHeaders.Add("Host", domain);
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        client.DefaultRequestHeaders.Add("X-Requested-With", "XMLHttpRequest");
+        client.DefaultRequestHeaders.Add("sec-ch-ua", "\"Google Chrome\";v=\"113\", \"Chromium\";v=\"113\", \"Not-A.Brand\";v=\"24\"");
+        client.DefaultRequestHeaders.Add("sec-ch-ua-mobile", "?0");
+        client.DefaultRequestHeaders.Add("sec-ch-ua-platform", "\"Windows\"");
     }
 
     private void DebugRequestHeaders(HttpRequestMessage request) {
@@ -74,7 +70,7 @@ public partial class GenesisStudio {
 
     private static string[] validIdentifiers = new string[] { "p", "br", "i", "b", "u", "em", "hr", "img" };
     private static string[] ignoreIdentifiers = new string[] { "script" };
-    private async Task Process(SessionInfo session, INode node, State state, bool inParagraph = false) {
+    private async Task Process(INode node, State state, bool inParagraph = false) {
         if (node.NodeType == NodeType.Element) {
 
             IElement el = (IElement)node;
@@ -106,7 +102,7 @@ public partial class GenesisStudio {
                 if (imgurl != null) {
                     string ext = GetExtensionFromURL(imgurl);
                     int id = State.image++;
-                    ext = await DownloadImage(session, imgurl, Path.Join(state.path, "Images", $"{id}{ext}"), ext);
+                    ext = await DownloadImage(imgurl, Path.Join(state.path, "Images", $"{id}{ext}"), ext);
                     state.epub.AppendLine($"<div><img src=\"../Images/{id}{ext}\" alt=\"\" /></div>");
                 }
 
@@ -126,7 +122,7 @@ public partial class GenesisStudio {
             }
 
             foreach (INode child in node.ChildNodes) {
-                await Process(session, child, state, inParagraph || isValid);
+                await Process(child, state, inParagraph || isValid);
             }
 
             if (isValid) {
@@ -150,7 +146,7 @@ public partial class GenesisStudio {
         return token.Groups[1].Value;
     }
 
-    private async Task<string> DownloadImage(SessionInfo session, string url, string path, string ext) {
+    private async Task<string> DownloadImage(string url, string path, string ext) {
         //return ext;
         try {
             client.DefaultRequestHeaders.Remove("Host");
@@ -158,7 +154,6 @@ public partial class GenesisStudio {
             url);
             request.Headers.Add("Referer", $"{baseUrl}");
             request.Headers.Add("httpVersion", "h3");
-            request.Headers.Add("Login-At", session.JWT);
 
             using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
                 if (res.IsSuccessStatusCode) {
@@ -205,171 +200,29 @@ public partial class GenesisStudio {
         return ext;
     }
 
-    // For debugging
-    private static List<Cookie> DumpAllCookies(CookieContainer cookieJar) {
-        var cookies = new List<Cookie>();
-
-        var table = (Hashtable)cookieJar.GetType()
-            .InvokeMember("m_domainTable",
-                BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance,
-                null, cookieJar, new object[] { })!;
-
-        foreach (var key in table.Keys) {
-            string? domain = key as string;
-            if (domain == null)
-                continue;
-
-            SortedList? pathList = table[key]!
-                .GetType()
-                .InvokeMember("m_list",
-                    BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance,
-                    null, table[key], new object[] { }) as SortedList;
-
-            if (pathList == null)
-                continue;
-
-            foreach (var pathKey in pathList.Keys) {
-                var cookieCollection = pathList[pathKey] as CookieCollection;
-                if (cookieCollection != null) {
-                    foreach (Cookie cookie in cookieCollection) {
-                        cookies.Add(cookie);
-                    }
-                }
-            }
-        }
-
-        return cookies;
-    }
-
-    private Cookie? ParseCookie(string header, Uri uri) {
-        var parts = header.Split(';');
-        if (parts.Length == 0) return null;
-
-        var nameValue = parts[0].Split('=', 2);
-        if (nameValue.Length != 2) return null;
-
-        var cookie = new Cookie(nameValue[0].Trim(), nameValue[1].Trim());
-
-        // Optional attributes
-        foreach (var p in parts.Skip(1)) {
-            var segment = p.Trim();
-            if (segment.StartsWith("Path=", StringComparison.OrdinalIgnoreCase))
-                cookie.Path = segment.Substring(5);
-            else if (segment.StartsWith("Domain=", StringComparison.OrdinalIgnoreCase))
-                cookie.Domain = segment.Substring(7);
-            else if (segment.StartsWith("Expires=", StringComparison.OrdinalIgnoreCase)
-                  && DateTime.TryParse(segment.Substring(8), out var expires))
-                cookie.Expires = expires;
-            else if (segment.Equals("Secure", StringComparison.OrdinalIgnoreCase))
-                cookie.Secure = true;
-            else if (segment.Equals("HttpOnly", StringComparison.OrdinalIgnoreCase))
-                cookie.HttpOnly = true;
-        }
-
-        // Default domain if missing
-        if (string.IsNullOrEmpty(cookie.Domain))
-            cookie.Domain = uri.Host;
-
-        return cookie;
-    }
-
-    private void UpdateCookies(HttpRequestMessage req, HttpResponseHeaders headers) {
-        if (headers.TryGetValues("Set-Cookie", out IEnumerable<string>? values)) {
-            foreach (string header in values) {
-                var cookie = ParseCookie(header, req.RequestUri!);
-                if (cookie != null) {
-                    cookieContainer.Add(req.RequestUri!, cookie);
-                }
-            }
-        }
-    }
-
-    public async Task<SessionInfo> GetSession(string email, string password) {
-        SessionInfo session = new SessionInfo("");
-
-        // Login
-        HttpRequestMessage loginRequest = new HttpRequestMessage(HttpMethod.Post,
-                    $"https://ckiwecspopkpvhccpisf.supabase.co/auth/v1/token?grant_type=password") {
-            Content = new StringContent($"{{\"email\":\"{email}\",\"password\":\"{password}\",\"gotrue_meta_security\":{{}}}}", Encoding.UTF8, "application/json")
-        };
-        loginRequest.Headers.Add("apikey", "sb_publishable_YwmK1j7R538L3C4E3qMw6w_au-q5prS");
-        loginRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "sb_publishable_YwmK1j7R538L3C4E3qMw6w_au-q5prS");
-        using (HttpResponseMessage loginResult = await client.SendAsync(loginRequest)) {
-            if (loginResult.IsSuccessStatusCode) {
-                using (HttpContent loginContent = loginResult.Content) {
-                    JObject response = JObject.Parse(await loginContent.ReadAsStringAsync());
-                    string JWT = response.Value<string>("access_token")!;
-
-                    session.JWT = JWT;
-
-                    return session;
-                }
-            }
-        }
-
-        throw new Exception("Unable to obtain session!");
-    }
-
-    private Regex contentRegex = new Regex(@"(const contentData)\s*\=\s*[\'\""\`](.+)[\'\""\`]\;");
-    private Regex simpleFormatting = new Regex(@"\*\*.*?\*\*|(?<!\*)\*(?!\*).*?(?<!\*)\*(?!\*)|~.*?~|^\s*\*\s*\*\s*\*\s*$", RegexOptions.Multiline);
-    private Regex hrRegex = new Regex(@"^\s*\*\s*\*\s*\*\s*$");
-
-    public async Task DownloadChapter(SessionInfo session, string episodeNo, string path, string filename) {
+    public async Task DownloadChapter(string url, string path, string filename) {
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
 
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-                $"https://genesistudio.com/api/chapters/{episodeNo}/content");
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session.JWT);
+                url);
 
             using (HttpResponseMessage res = await client.SendAsync(request)) {
                 if (res.IsSuccessStatusCode) {
                     using (HttpContent content = res.Content) {
-                        string source = await content.ReadAsStringAsync();
-                        JObject chapterData = JObject.Parse(source);
-                        JObject chapter = chapterData.Value<JObject>("data")!;
-                        string title = chapter.Value<string>("chapter_title")!;
-                        string chapterContent = chapter.Value<string>("chapter_content")!;
+                        IHtmlDocument document = parser.ParseDocument(await content.ReadAsStringAsync());
 
-                        state.epub.AppendLine($"<h1>{title}</h1>");
-                        state.epub.AppendLine($"<p><a href=\"https://genesistudio.com/viewer/{episodeNo}\">Original</a></p>");
-
-                        StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
-
-                        if (simpleFormatting.IsMatch(chapterContent)) {
-                            string[] lines = chapterContent.Split("\n");
-
-                            foreach (string raw in lines) {
-                                string line = CleanUnicode(raw.Trim());
-                                if (line == string.Empty) continue;
-
-                                if (hrRegex.IsMatch(line)) {
-                                    html.Append("<hr>");
-                                    continue;
-                                }
-
-                                line = Regex.Replace(line, @"^\s*~\s*", "");
-                                line = Regex.Replace(line, @"\s*~\s*$", "");
-
-                                line = Regex.Replace(line, @"\*\*([^\*]+)\*\*", "<strong>$1</strong>");
-                                line = Regex.Replace(line, @"(?<!\*)\*(?!\*)([^\*]+?)(?<!\*)\*(?!\*)", "<em>$1</em>");
-
-                                html.Append($"<p>{line}</p>");
-                            }
-                        } else {
-                            string[] lines = chapterContent.Split("\n");
-                            foreach (string raw in lines) {
-                                string line = CleanUnicode(raw.Trim());
-                                if (line == string.Empty) continue;
-                                html.Append($"<p>{line}</p>");
-                            }
+                        IElement? title = document.QuerySelector(".chapter-header");
+                        if (title != null) {
+                            state.epub.AppendLine($"<h1>{title.TextContent.Trim()}</h1>");
+                            title.RemoveFromParent();
                         }
 
-                        html.Append("</div><body></html>");
+                        state.epub.AppendLine($"<p><a href=\"{url}\">Original</a></p>");
 
-                        IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
-                        await Process(session, body, state);
+                        IElement body = document.QuerySelector(".chapter-content")!;
+                        await Process(body, state);
                     }
                 }
             }
@@ -385,7 +238,7 @@ public partial class GenesisStudio {
 
             File.WriteAllText(filepath, state.epub.ToString());
         } catch (Exception exception) {
-            Console.WriteLine($"Error trying to obtain chapter: {episodeNo}");
+            Console.WriteLine($"Error trying to obtain chapter: {url}");
             Console.WriteLine(exception);
         }
     }
