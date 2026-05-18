@@ -1,4 +1,5 @@
 ﻿using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using Newtonsoft.Json.Linq;
 using System.Collections;
@@ -217,6 +218,8 @@ public partial class Novelpia {
                         }
                         writer.Dispose();
                     }
+                } else {
+                    throw new Exception($"Unable to download image: {url}");
                 }
             }
         } catch (Exception exception) {
@@ -420,13 +423,13 @@ public partial class Novelpia {
     }
 
     public async Task DownloadChapter(SessionInfo session, string novelNo, string episodeNo, string path, string filename) {
-        await UpdateSession(session);
-
         try {
             State state = new State(path);
             state.epub.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?><!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title></title><link href=\"../Styles/stylesheet.css\" type=\"text/css\" rel=\"stylesheet\" /></head><body>");
 
             for (int i = 0; i < 2; ++i) {
+                await UpdateSession(session);
+
                 HttpRequestMessage episodeRequest = new HttpRequestMessage(HttpMethod.Get,
                     $"https://api-global.novelpia.com/v1/novel/episode?episode_no={episodeNo}");
                 episodeRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
@@ -467,32 +470,79 @@ public partial class Novelpia {
                                         break;
                                     }
                                 } else {
-                                    HttpRequestMessage imageRequest = new HttpRequestMessage(HttpMethod.Get,
-                                    $"https://api-global.novelpia.com/v1/novel/episode/image?_t={token}");
-                                    imageRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
-                                    imageRequest.Headers.Add("Login-At", session.JWT);
+                                    // Obtain nuxt data
+                                    HttpRequestMessage nuxtRequest = new HttpRequestMessage(HttpMethod.Get,
+                                        $"{baseUrl}/viewer/i/{episodeNo}");
+                                    nuxtRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                                    nuxtRequest.Headers.Add("Login-At", session.JWT);
+                                    using (HttpResponseMessage nuxtResponse = await client.SendAsync(nuxtRequest)) {
+                                        if (nuxtResponse.IsSuccessStatusCode) {
+                                            using (HttpContent nuxtContent = nuxtResponse.Content) {
+                                                IHtmlDocument document = parser.ParseDocument(await nuxtContent.ReadAsStringAsync());
+                                                JArray nuxtData = JArray.Parse(document.QuerySelector("#__NUXT_DATA__")!.TextContent);
 
-                                    using (HttpResponseMessage imageResponse = await client.SendAsync(imageRequest)) {
-                                        if (imageResponse.IsSuccessStatusCode) {
-                                            using (HttpContent content = imageResponse.Content) {
-                                                JObject chapter = JObject.Parse(await content.ReadAsStringAsync());
-                                                JArray chapterContent = chapter.Value<JObject>("result")!.Value<JArray>("data")!;
-                                                StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
-                                                foreach (JObject obj in chapterContent) {
-                                                    html.Append($"<img src=\"{obj.Value<string>("file_url")!}\">");
+                                                // Locate cloud front header
+                                                JObject? cloudFrontHeader = null;
+                                                foreach (var nuxtToken in nuxtData) {
+                                                    if (nuxtToken is JObject obj &&
+                                                        obj["CloudFront-Policy"] != null &&
+                                                        obj["CloudFront-Key-Pair-Id"] != null &&
+                                                        obj["CloudFront-Signature"] != null) {
+                                                        cloudFrontHeader = obj;
+                                                        break;
+                                                    }
                                                 }
-                                                html.Append("</div><body></html>");
 
-                                                state.epub.AppendLine($"<h1>{episodeDataResult.Value<JObject>("data")!.Value<string>("epi_title")}</h1>");
-                                                state.epub.AppendLine($"<p><a href=\"https://global.novelpia.com/viewer/{episodeNo}\">Original</a></p>");
-                                                state.epub.AppendLine($"<div class=\"content\">");
+                                                if (cloudFrontHeader == null) {
+                                                    throw new Exception("Unable to get CloundFront cookies!");
+                                                }
 
-                                                IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
-                                                await Process(session, body, state);
+                                                // TODO check these cookies don't break regular downloads
+                                                Cookie[] cloudFrontCookies = new Cookie[] {
+                                                    new Cookie("CloudFront-Policy", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Policy")!].Value<string>()) {
+                                                        Domain = ".novelpia.com"
+                                                    },
+                                                    new Cookie("CloudFront-Key-Pair-Id", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Key-Pair-Id")!].Value<string>()) {
+                                                        Domain = ".novelpia.com"
+                                                    },
+                                                    new Cookie("CloudFront-Signature", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Signature")!].Value<string>()) {
+                                                        Domain = ".novelpia.com"
+                                                    }
+                                                };
 
-                                                state.epub.AppendLine($"</div>");
+                                                foreach (var cloudFrontCookie in cloudFrontCookies) {
+                                                    cookieContainer.Add(new Uri(baseUrl), cloudFrontCookie);
+                                                }
 
-                                                break;
+                                                HttpRequestMessage imageRequest = new HttpRequestMessage(HttpMethod.Get,
+                                                    $"https://api-global.novelpia.com/v1/novel/episode/image?_t={token}");
+                                                imageRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                                                imageRequest.Headers.Add("Login-At", session.JWT);
+
+                                                using (HttpResponseMessage imageResponse = await client.SendAsync(imageRequest)) {
+                                                    if (imageResponse.IsSuccessStatusCode) {
+                                                        using (HttpContent content = imageResponse.Content) {
+                                                            JObject chapter = JObject.Parse(await content.ReadAsStringAsync());
+                                                            JArray chapterContent = chapter.Value<JObject>("result")!.Value<JArray>("data")!;
+                                                            StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
+                                                            foreach (JObject obj in chapterContent) {
+                                                                html.Append($"<img src=\"{obj.Value<string>("file_url")!}\">");
+                                                            }
+                                                            html.Append("</div><body></html>");
+
+                                                            state.epub.AppendLine($"<h1>{episodeDataResult.Value<JObject>("data")!.Value<string>("epi_title")}</h1>");
+                                                            state.epub.AppendLine($"<p><a href=\"https://global.novelpia.com/viewer/{episodeNo}\">Original</a></p>");
+                                                            state.epub.AppendLine($"<div class=\"content\">");
+
+                                                            IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
+                                                            await Process(session, body, state);
+
+                                                            state.epub.AppendLine($"</div>");
+
+                                                            break;
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -530,5 +580,36 @@ public partial class Novelpia {
             Console.WriteLine($"Error trying to obtain novel '{novelNo}', chapter '{episodeNo}'");
             Console.WriteLine(exception);
         }
+    }
+
+    public async Task<string[]> GetChapterList(SessionInfo session, string novelNo, int noNonPremium = 100000) {
+        await UpdateSession(session);
+
+        List<string> chapters = new List<string>();
+
+        try {
+            HttpRequestMessage chapterListRequest = new HttpRequestMessage(HttpMethod.Get,
+                    $"https://api-global.novelpia.com/v1/novel/episode/list?novel_no={novelNo}&page=1&rows={noNonPremium}&sort=ASC");
+            chapterListRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+
+            using (HttpResponseMessage chapterListResp = await client.SendAsync(chapterListRequest)) {
+                if (chapterListResp.IsSuccessStatusCode) {
+                    using (HttpContent chapterListContent = chapterListResp.Content) {
+                        JObject chapterData = JObject.Parse(await chapterListContent.ReadAsStringAsync());
+                        JObject result = chapterData.Value<JObject>("result")!;
+                        foreach (JObject item in result.Value<JArray>("list")!) {
+                            chapters.Add(item.Value<string>("episode_no")!);
+                        }
+                    }
+                } else {
+                    throw new Exception("Failed to get chapter list");
+                }
+            }
+        } catch (Exception exception) {
+            Console.WriteLine($"Error trying to obtain chapter list for '{novelNo}'");
+            Console.WriteLine(exception);
+        }
+
+        return chapters.ToArray();
     }
 }
