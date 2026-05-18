@@ -180,10 +180,14 @@ public partial class Novelpia {
         try {
             client.DefaultRequestHeaders.Remove("Host");
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get,
-            url);
+                new Uri(new Uri(baseUrl), url));
             request.Headers.Add("Referer", $"{baseUrl}");
             request.Headers.Add("httpVersion", "h3");
             request.Headers.Add("Login-At", session.JWT);
+
+            foreach (var cookie in DumpAllCookies(cookieContainer)) {
+                Console.WriteLine($"{cookie.Domain} {cookie.Name}={cookie.Value}");
+            }
 
             using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
                 if (res.IsSuccessStatusCode) {
@@ -449,25 +453,71 @@ public partial class Novelpia {
 
                             using (HttpResponseMessage res = await client.SendAsync(request)) {
                                 if (res.IsSuccessStatusCode) {
-                                    using (HttpContent content = res.Content) {
-                                        JObject chapter = JObject.Parse(await content.ReadAsStringAsync());
-                                        JObject chapterContent = chapter.Value<JObject>("result")!.Value<JObject>("data")!;
-                                        StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
-                                        foreach (var kv in chapterContent) {
-                                            html.Append(WebUtility.HtmlDecode(kv.Value!.Value<string>()));
+                                    // Obtain nuxt data
+                                    HttpRequestMessage nuxtRequest = new HttpRequestMessage(HttpMethod.Get,
+                                        $"{baseUrl}/viewer/{episodeNo}");
+                                    nuxtRequest.Headers.Add("Sec-Fetch-Site", "Same-Origin");
+                                    nuxtRequest.Headers.Add("Login-At", session.JWT);
+                                    using (HttpResponseMessage nuxtResponse = await client.SendAsync(nuxtRequest)) {
+                                        if (nuxtResponse.IsSuccessStatusCode) {
+                                            using (HttpContent nuxtContent = nuxtResponse.Content) {
+                                                IHtmlDocument document = parser.ParseDocument(await nuxtContent.ReadAsStringAsync());
+                                                JArray nuxtData = JArray.Parse(document.QuerySelector("#__NUXT_DATA__")!.TextContent);
+
+                                                // Locate cloud front header
+                                                JObject? cloudFrontHeader = null;
+                                                foreach (var nuxtToken in nuxtData) {
+                                                    if (nuxtToken is JObject obj &&
+                                                        obj["CloudFront-Policy"] != null &&
+                                                        obj["CloudFront-Key-Pair-Id"] != null &&
+                                                        obj["CloudFront-Signature"] != null) {
+                                                        cloudFrontHeader = obj;
+                                                        break;
+                                                    }
+                                                }
+
+                                                if (cloudFrontHeader == null) {
+                                                    throw new Exception("Unable to get CloundFront cookies!");
+                                                }
+
+                                                Cookie[] cloudFrontCookies = new Cookie[] {
+                                                    new Cookie("CloudFront-Policy", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Policy")!].Value<string>()) {
+                                                        Domain = ".novelpia.com"
+                                                    },
+                                                    new Cookie("CloudFront-Key-Pair-Id", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Key-Pair-Id")!].Value<string>()) {
+                                                        Domain = ".novelpia.com"
+                                                    },
+                                                    new Cookie("CloudFront-Signature", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Signature")!].Value<string>()) {
+                                                        Domain = ".novelpia.com"
+                                                    }
+                                                };
+
+                                                foreach (var cloudFrontCookie in cloudFrontCookies) {
+                                                    cookieContainer.Add(new Uri(baseUrl), cloudFrontCookie);
+                                                }
+
+                                                using (HttpContent content = res.Content) {
+                                                    JObject chapter = JObject.Parse(await content.ReadAsStringAsync());
+                                                    JObject chapterContent = chapter.Value<JObject>("result")!.Value<JObject>("data")!;
+                                                    StringBuilder html = new StringBuilder("<html><head></head><body><div class='content'>");
+                                                    foreach (var kv in chapterContent) {
+                                                        html.Append(WebUtility.HtmlDecode(kv.Value!.Value<string>()));
+                                                    }
+                                                    html.Append("</div><body></html>");
+
+                                                    state.epub.AppendLine($"<h1>{episodeDataResult.Value<JObject>("data")!.Value<string>("epi_title")}</h1>");
+                                                    state.epub.AppendLine($"<p><a href=\"https://global.novelpia.com/viewer/{episodeNo}\">Original</a></p>");
+                                                    state.epub.AppendLine($"<div class=\"content\">");
+
+                                                    IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
+                                                    await Process(session, body, state);
+
+                                                    state.epub.AppendLine($"</div>");
+
+                                                    break;
+                                                }
+                                            }
                                         }
-                                        html.Append("</div><body></html>");
-
-                                        state.epub.AppendLine($"<h1>{episodeDataResult.Value<JObject>("data")!.Value<string>("epi_title")}</h1>");
-                                        state.epub.AppendLine($"<p><a href=\"https://global.novelpia.com/viewer/{episodeNo}\">Original</a></p>");
-                                        state.epub.AppendLine($"<div class=\"content\">");
-
-                                        IElement body = parser.ParseDocument(html.ToString()).QuerySelector(".content")!;
-                                        await Process(session, body, state);
-
-                                        state.epub.AppendLine($"</div>");
-
-                                        break;
                                     }
                                 } else {
                                     // Obtain nuxt data
@@ -497,7 +547,6 @@ public partial class Novelpia {
                                                     throw new Exception("Unable to get CloundFront cookies!");
                                                 }
 
-                                                // TODO check these cookies don't break regular downloads
                                                 Cookie[] cloudFrontCookies = new Cookie[] {
                                                     new Cookie("CloudFront-Policy", nuxtData[cloudFrontHeader.Value<int>("CloudFront-Policy")!].Value<string>()) {
                                                         Domain = ".novelpia.com"
