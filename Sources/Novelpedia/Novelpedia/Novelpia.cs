@@ -185,10 +185,6 @@ public partial class Novelpia {
             request.Headers.Add("httpVersion", "h3");
             request.Headers.Add("Login-At", session.JWT);
 
-            foreach (var cookie in DumpAllCookies(cookieContainer)) {
-                Console.WriteLine($"{cookie.Domain} {cookie.Name}={cookie.Value}");
-            }
-
             using (HttpResponseMessage res = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)) {
                 if (res.IsSuccessStatusCode) {
                     using (HttpContent content = res.Content) {

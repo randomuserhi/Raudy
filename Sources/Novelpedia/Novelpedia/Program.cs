@@ -4,6 +4,7 @@ namespace Source {
     internal struct NovelData {
         public string novelNo;
         public string path;
+        public string[]? chapters;
     }
 
     internal class Program {
@@ -15,16 +16,35 @@ namespace Source {
 
                 NovelData[] novels = new NovelData[] {
                     new NovelData() {
-                        novelNo = "1837",
-                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] The Romance Fantasy Novel MC is Only Into Me\Raw\"
+                        novelNo = "3651",
+                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] I Became the Hated Villain of the Academy\Raw\",
+                        chapters = new string[] { "1:32",
+"1:34",
+"1:50",
+"1:59",
+"1:70",
+"1:85",
+"1:87",
+"2:1",
+"2:7",
+"2:16",
+"2:27",
+"2:29",
+"2:33",
+"2:42",
+"2:44",
+"2:48",
+"2:52",
+"2:55",
+"2:59",
+"2:60",
+"2:68",
+"2:78" }
                     },
                     new NovelData() {
-                        novelNo = "1312",
-                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] I Saved the Heroine Just Before Her Death\Raw\"
-                    },
-                    new NovelData() {
-                        novelNo = "1145",
-                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] The Hero and the Beast\Raw\"
+                        novelNo = "2759",
+                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] The Childhood Friend of an Unconquerable Heroine\Raw\",
+                        chapters = new string[] { "2:92" }
                     },
                 };
 
@@ -48,7 +68,9 @@ namespace Source {
 
                         string episodeNo = url.Split("/").Last();
 
-                        if (i >= skip) {
+                        bool scrape = (novel.chapters == null && i >= skip) || (novel.chapters != null && novel.chapters.Contains($"{volume}:{chapter}"));
+
+                        if (scrape) {
                             await novelpia.DownloadChapter(session, novelNo, episodeNo, novel.path + $"Volume {volume}", $"{chapter.ToString("D4")}.xhtml");
                         }
 
@@ -57,7 +79,7 @@ namespace Source {
                             chapter = 1;
                         }
 
-                        if (i >= skip) {
+                        if (scrape) {
                             Thread.Sleep(5000); // Cloudflare rate limiting
                         }
                     }
