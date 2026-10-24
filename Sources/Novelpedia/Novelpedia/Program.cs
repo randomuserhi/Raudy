@@ -12,39 +12,23 @@ namespace Source {
             Task.Run(async void () => {
                 Novelpia novelpia = new Novelpia();
 
-                Novelpia.SessionInfo session = await novelpia.GetSession("", "");
+                Novelpia.SessionInfo session = await novelpia.GetSession(
+                    "magicalworld.nano@gmail.com",
+                    "randomnovelpia1*"
+                );
 
                 NovelData[] novels = new NovelData[] {
                     new NovelData() {
-                        novelNo = "3651",
-                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] I Became the Hated Villain of the Academy\Raw\",
-                        chapters = new string[] { "1:32",
-"1:34",
-"1:50",
-"1:59",
-"1:70",
-"1:85",
-"1:87",
-"2:1",
-"2:7",
-"2:16",
-"2:27",
-"2:29",
-"2:33",
-"2:42",
-"2:44",
-"2:48",
-"2:52",
-"2:55",
-"2:59",
-"2:60",
-"2:68",
-"2:78" }
+                        novelNo = "1216",
+                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] I Can Hear the Saintess’s Inner Thoughts\Raw\",
                     },
                     new NovelData() {
-                        novelNo = "2759",
-                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] The Childhood Friend of an Unconquerable Heroine\Raw\",
-                        chapters = new string[] { "2:92" }
+                        novelNo = "312",
+                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] I Became the Husband of a Sword Demon\Raw\",
+                    },
+                    new NovelData() {
+                        novelNo = "985",
+                        path = @"D:\Visual Novels\[Self-Sourced] [Novelpia] The Priest's Wife Was a Demon King\Raw\",
                     },
                 };
 

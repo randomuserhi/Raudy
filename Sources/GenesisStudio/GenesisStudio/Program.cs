@@ -6,7 +6,7 @@ namespace Source {
             Task.Run(async void () => {
                 GenesisStudio genesisStudio = new GenesisStudio();
 
-                GenesisStudio.SessionInfo session = await genesisStudio.GetSession("", "");
+                GenesisStudio.SessionInfo session = await genesisStudio.GetSession("nedewa3495@anawebs.com", "Onworks1*");
 
                 string[] episodes = {
                 "https://genesistudio.com/viewer/8810",
